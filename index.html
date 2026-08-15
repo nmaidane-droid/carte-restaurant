@@ -34,7 +34,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .demo{background:var(--ochre);color:#231703;font-size:12.5px;padding:7px var(--pad);text-align:center}
 
 .wall{background:var(--cobalt-deep);color:var(--chaux);padding:18px var(--pad) 0}
-.wall-top{display:flex;justify-content:flex-end;margin-bottom:16px}
+.wall-top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.lock{border:1px solid rgba(242,240,235,.22);border-radius:999px;width:34px;height:34px;
+  font-size:14px;line-height:1;opacity:.45;display:flex;align-items:center;justify-content:center;
+  margin-inline-end:auto}
+.lock:hover,.lock:focus-visible{opacity:1;background:rgba(242,240,235,.1)}
 .wall h1{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   font-family:var(--display);font-weight:800;line-height:.92;
   font-size:clamp(42px,12vw,84px);letter-spacing:-.03em}
@@ -157,15 +161,6 @@ textarea{min-height:74px;resize:vertical}
 .empty{text-align:center;color:var(--ink-soft);padding:34px 0}
 
 /* ---------- administration photos ---------- */
-.pinwrap{max-width:270px;margin:0 auto}
-.dots{display:flex;gap:11px;justify-content:center;margin:16px 0 22px}
-.dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--cobalt)}
-.dot.on{background:var(--cobalt)}
-.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.key{background:#fff;border:1px solid var(--sand);border-radius:11px;padding:16px 0;
-  font-family:var(--mono);font-size:21px;color:var(--cobalt-deep)}
-.key:active{background:var(--cobalt);color:var(--chaux)}
-.key.alt{font-family:var(--body);font-size:15px}
 .pinerr{text-align:center;color:#B3261E;font-size:13.5px;min-height:20px;margin-top:12px}
 
 .adm-bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
@@ -205,6 +200,7 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
 
 <header class="wall">
   <div class="wall-top">
+    <button class="lock" id="lock" aria-label="Gestion des photos">🔒</button>
     <button class="globe" id="globe"><span class="fg" id="globeFlag">🇫🇷</span><span id="globeLbl">Français</span></button>
   </div>
   <h1>Casa <em>García</em></h1>
@@ -748,6 +744,7 @@ document.addEventListener('click', e => {
 });
 
 $('#globe').onclick = () => $('#langSheet').classList.add('on');
+$('#lock').onclick  = () => openPin();
 $('#barGo').onclick = () => { renderCart(); $('#cartSheet').classList.add('on'); };
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape'){ $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on');
@@ -814,76 +811,29 @@ function creditOf(id){
 }
 const photoDishes = () => allDishes().filter(d => d.p);
 
-/* ---------- appui long sur le titre ---------- */
-(function(){
-  const el = document.querySelector('.wall h1');
-  let timer = null, x0 = 0, y0 = 0;
-
-  const start = ev => {
-    const t = ev.touches ? ev.touches[0] : ev;
-    x0 = t.clientX; y0 = t.clientY;
-    clearTimeout(timer);
-    timer = setTimeout(() => { timer = null; openPin(); }, 800);
-  };
-  const stop = () => { clearTimeout(timer); timer = null; };
-  /* on n'annule que si le doigt a vraiment bougé : sur écran tactile,
-     un appui immobile génère quand même des micro-déplacements */
-  const maybeStop = ev => {
-    if (!timer) return;
-    const t = ev.touches ? ev.touches[0] : ev;
-    if (Math.hypot(t.clientX - x0, t.clientY - y0) > 14) stop();
-  };
-
-  el.addEventListener('touchstart', start, {passive:true});
-  el.addEventListener('touchend', stop);
-  el.addEventListener('touchcancel', stop);
-  el.addEventListener('touchmove', maybeStop, {passive:true});
-  el.addEventListener('mousedown', start);
-  el.addEventListener('mouseup', stop);
-  el.addEventListener('mouseleave', stop);
-  el.addEventListener('contextmenu', e => e.preventDefault());
-
-  /* porte de secours : ajouter #photos à la fin de l'adresse */
-  const byHash = () => { if (location.hash === '#photos') openPin(); };
-  window.addEventListener('hashchange', byHash);
-  byHash();
-})();
 
 /* ---------- pavé numérique ---------- */
-let pin = '';
 async function sha256(txt){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
 }
 function openPin(){
-  pin = '';
-  $('#admTitle').textContent = 'Photos';
+  $('#admTitle').textContent = 'Gestion des photos';
   $('#admBody').innerHTML = `
-    <div class="pinwrap">
-      <div class="dots" id="dots"></div>
-      <div class="pad">
-        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="key" data-k="${n}">${n}</button>`).join('')}
-        <button class="key alt" data-k="del">effacer</button>
-        <button class="key" data-k="0">0</button>
-        <button class="key alt" data-k="ok">valider</button>
-      </div>
-      <div class="pinerr" id="pinerr"></div>
-    </div>
+    <div class="adm-log">Outil interne de gestion des illustrations de la carte.</div>
+    <label for="code">Code d'accès</label>
+    <input id="code" inputmode="numeric" autocomplete="off">
+    <div class="adm-bar"><button class="solid" id="unlock">Ouvrir</button></div>
+    <div class="pinerr" id="pinerr"></div>
     <button class="close" data-close>Fermer</button>`;
-  drawDots();
   $('#admSheet').classList.add('on');
+  setTimeout(() => $('#code')?.focus(), 60);
 }
-function drawDots(){
-  $('#dots').innerHTML = [0,1,2,3,4,5].map(i=>`<span class="dot ${i<pin.length?'on':''}"></span>`).join('');
-}
-async function pinKey(k){
-  if (k === 'del'){ pin = pin.slice(0,-1); drawDots(); return; }
-  if (k === 'ok'){
-    if (await sha256(pin) === PIN_HASH) return openAdmin();
-    $('#pinerr').textContent = 'Code incorrect';
-    pin = ''; drawDots(); return;
-  }
-  if (pin.length < 6){ pin += k; drawDots(); if (pin.length === 6) pinKey('ok'); }
+async function tryUnlock(){
+  const v = ($('#code')?.value || '').trim();
+  if (await sha256(v) === PIN_HASH) return openAdmin();
+  $('#pinerr').textContent = 'Code incorrect';
+  $('#code').value = '';
 }
 
 /* ---------- écran d'administration ---------- */
@@ -894,7 +844,7 @@ function openAdmin(){
   const got = photoDishes().filter(d => photoOf(d) && photoOf(d) !== d.p).length;
   $('#admBody').innerHTML = `
     <label for="pk">Clé API Pexels <span class="lc">(reste sur cet appareil)</span></label>
-    <input id="pk" type="password" value="${key}" placeholder="Colle ta clé ici" autocomplete="off">
+    <input id="pk" value="${key}" placeholder="Colle ta clé ici" autocomplete="off" spellcheck="false">
     <div class="adm-bar">
       <button class="solid" id="fill">Remplir les manquantes</button>
       <button id="expo">Exporter</button>
@@ -1007,7 +957,7 @@ function exportJSON(){
 
 /* ---------- interactions de l'administration ---------- */
 document.addEventListener('click', async e => {
-  const k = e.target.closest('[data-k]');       if (k) return pinKey(k.dataset.k);
+  if (e.target.id === 'unlock') return tryUnlock();
   const pk = e.target.closest('[data-pick]');   if (pk) return openPicker(pk.dataset.pick);
   const tk = e.target.closest('[data-take]');
   if (tk){
