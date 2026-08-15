@@ -35,7 +35,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 .wall{background:var(--cobalt-deep);color:var(--chaux);padding:18px var(--pad) 0}
 .wall-top{display:flex;justify-content:flex-end;margin-bottom:16px}
-.wall h1{font-family:var(--display);font-weight:800;line-height:.92;
+.wall h1{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  font-family:var(--display);font-weight:800;line-height:.92;
   font-size:clamp(42px,12vw,84px);letter-spacing:-.03em}
 .wall h1 em{font-style:normal;color:var(--ochre)}
 .wall .sub{font-size:13px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;
@@ -816,12 +817,36 @@ const photoDishes = () => allDishes().filter(d => d.p);
 /* ---------- appui long sur le titre ---------- */
 (function(){
   const el = document.querySelector('.wall h1');
-  let timer = null;
-  const start = () => { timer = setTimeout(openPin, 1000); };
-  const stop  = () => { clearTimeout(timer); };
-  ['pointerdown'].forEach(e => el.addEventListener(e, start));
-  ['pointerup','pointerleave','pointercancel','pointermove'].forEach(e => el.addEventListener(e, stop));
+  let timer = null, x0 = 0, y0 = 0;
+
+  const start = ev => {
+    const t = ev.touches ? ev.touches[0] : ev;
+    x0 = t.clientX; y0 = t.clientY;
+    clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; openPin(); }, 800);
+  };
+  const stop = () => { clearTimeout(timer); timer = null; };
+  /* on n'annule que si le doigt a vraiment bougé : sur écran tactile,
+     un appui immobile génère quand même des micro-déplacements */
+  const maybeStop = ev => {
+    if (!timer) return;
+    const t = ev.touches ? ev.touches[0] : ev;
+    if (Math.hypot(t.clientX - x0, t.clientY - y0) > 14) stop();
+  };
+
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchend', stop);
+  el.addEventListener('touchcancel', stop);
+  el.addEventListener('touchmove', maybeStop, {passive:true});
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', stop);
+  el.addEventListener('mouseleave', stop);
   el.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* porte de secours : ajouter #photos à la fin de l'adresse */
+  const byHash = () => { if (location.hash === '#photos') openPin(); };
+  window.addEventListener('hashchange', byHash);
+  byHash();
 })();
 
 /* ---------- pavé numérique ---------- */
