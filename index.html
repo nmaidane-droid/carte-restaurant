@@ -169,7 +169,7 @@ textarea{min-height:74px;resize:vertical}
 .adm-bar button.solid{background:var(--cobalt);color:var(--chaux)}
 .adm-bar button.warn{border-color:#B3261E;color:#B3261E}
 .adm-log{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);min-height:20px;margin-bottom:10px}
-.adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:11px}
+.adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .adm-cell{text-align:center;display:flex;flex-direction:column}
 .adm-cell .sq{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--sand);
   position:relative;background:var(--chaux-2);display:block}
@@ -177,9 +177,9 @@ textarea{min-height:74px;resize:vertical}
 .adm-cell .sq.none::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;
   justify-content:center;font-size:26px;color:var(--sand)}
 .adm-cell b{flex:1;display:block;font-size:11.5px;font-weight:600;margin-top:5px;line-height:1.25}
-.adm-cell .mini{display:flex;gap:5px;justify-content:center;margin-top:6px}
-.adm-cell .mini button{border:1px solid var(--sand);border-radius:5px;font-size:10.5px;
-  padding:3px 6px;color:var(--ink-soft);background:#fff}
+.adm-cell .mini{display:flex;gap:8px;margin-top:8px}
+.adm-cell .mini button{flex:1 1 0;min-width:0;border:1px solid var(--sand);border-radius:6px;
+  font-size:10.5px;padding:5px 2px;color:var(--ink-soft);background:#fff}
 .res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .res img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--sand);display:block}
 .credits{margin-top:14px;font-size:11.5px;line-height:1.5;color:var(--ink-soft)}
@@ -836,23 +836,43 @@ async function tryUnlock(){
   $('#code').value = '';
 }
 
+/* Deux plats illustrés par la même photo : Pexels renvoie souvent le même
+   résultat pour des requêtes voisines. */
+function duplicates(){
+  const seen = new Map();
+  for (const d of photoDishes()){
+    const u = photoOf(d);
+    if (!u || u === d.p) continue;
+    seen.set(u, (seen.get(u) || 0) + 1);
+  }
+  return new Set([...seen].filter(([,c]) => c > 1).map(([u]) => u));
+}
+let admFilter = 'all';
+
 /* ---------- écran d'administration ---------- */
 function openAdmin(){
   $('#admTitle').textContent = 'Photos des plats';
   const key = LS.raw('cg_pexkey','');
   const n   = photoDishes().length;
   const got = photoDishes().filter(d => photoOf(d) && photoOf(d) !== d.p).length;
+  const dup = duplicates();
+  const list = admFilter === 'dupes'
+             ? photoDishes().filter(d => dup.has(photoOf(d)))
+             : photoDishes();
   $('#admBody').innerHTML = `
     <label for="pk">Clé API Pexels <span class="lc">(reste sur cet appareil)</span></label>
     <input id="pk" value="${key}" placeholder="Colle ta clé ici" autocomplete="off" spellcheck="false">
     <div class="adm-bar">
       <button class="solid" id="fill">Remplir les manquantes</button>
+      <button class="${admFilter==='dupes'?'solid':''}" id="dupes">Doublons${dup.size?' ('+dup.size+')':''}</button>
       <button id="expo">Exporter</button>
       <button class="warn" id="wipe">Tout retirer</button>
     </div>
-    <div class="adm-log" id="log">${got} / ${n} plats illustrés</div>
+    <div class="adm-log" id="log">${admFilter==='dupes'
+       ? (list.length ? list.length+' plats partagent une photo' : 'Aucun doublon')
+       : got+' / '+n+' plats illustrés'}</div>
     <div class="adm-grid">
-      ${photoDishes().map(d => {
+      ${list.map(d => {
         const u = photoOf(d) === d.p ? null : photoOf(d);
         return `<div class="adm-cell">
           <button class="sq ${u?'':'none'}" data-pick="${d.id}">
@@ -982,6 +1002,10 @@ document.addEventListener('click', async e => {
   if (e.target.id === 'fill') return fillAll();
   if (e.target.id === 'go')   return runPick();
   if (e.target.id === 'back') return openAdmin();
+  if (e.target.id === 'dupes'){
+    admFilter = admFilter === 'dupes' ? 'all' : 'dupes';
+    return openAdmin();
+  }
   if (e.target.id === 'expo') return exportJSON();
   if (e.target.id === 'copy'){
     try { await navigator.clipboard.writeText($('#ex').value); e.target.textContent = 'Copié'; }
