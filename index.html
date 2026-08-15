@@ -170,14 +170,14 @@ textarea{min-height:74px;resize:vertical}
 .adm-bar button.warn{border-color:#B3261E;color:#B3261E}
 .adm-log{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);min-height:20px;margin-bottom:10px}
 .adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:11px}
-.adm-cell{text-align:center}
+.adm-cell{text-align:center;display:flex;flex-direction:column}
 .adm-cell .sq{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--sand);
   position:relative;background:var(--chaux-2);display:block}
 .adm-cell .sq img{width:100%;height:100%;object-fit:cover;display:block}
 .adm-cell .sq.none::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;
   justify-content:center;font-size:26px;color:var(--sand)}
-.adm-cell b{display:block;font-size:11.5px;font-weight:600;margin-top:5px;line-height:1.25}
-.adm-cell .mini{display:flex;gap:5px;justify-content:center;margin-top:5px}
+.adm-cell b{flex:1;display:block;font-size:11.5px;font-weight:600;margin-top:5px;line-height:1.25}
+.adm-cell .mini{display:flex;gap:5px;justify-content:center;margin-top:6px}
 .adm-cell .mini button{border:1px solid var(--sand);border-radius:5px;font-size:10.5px;
   padding:3px 6px;color:var(--ink-soft);background:#fff}
 .res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
