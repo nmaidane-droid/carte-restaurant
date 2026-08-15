@@ -35,10 +35,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 .wall{background:var(--cobalt-deep);color:var(--chaux);padding:18px var(--pad) 0}
 .wall-top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.lock{border:1px solid rgba(242,240,235,.22);border-radius:999px;width:34px;height:34px;
-  font-size:14px;line-height:1;opacity:.45;display:flex;align-items:center;justify-content:center;
+.lock{border:1px solid rgba(242,240,235,.35);border-radius:999px;width:34px;height:34px;
+  font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;
   margin-inline-end:auto}
-.lock:hover,.lock:focus-visible{opacity:1;background:rgba(242,240,235,.1)}
+.lock:hover,.lock:focus-visible{background:rgba(242,240,235,.1)}
 .wall h1{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   font-family:var(--display);font-weight:800;line-height:.92;
   font-size:clamp(42px,12vw,84px);letter-spacing:-.03em}
@@ -242,7 +242,7 @@ const CONFIG = {
   currency:'MAD',
   orderLang:'fr',            // langue dans laquelle la cuisine reçoit la commande
   address:'Asilah, Maroc',
-  demo:true,                 // ⚠️ false quand les prix auront été confirmés par le patron
+  demo:false,                // bandeau ocre « prix à confirmer » — remettre à true si besoin
   photos:true,               // vignettes sur entrées / plats / desserts
   showOrig:false,            // nom espagnol sous chaque plat
   showEsCat:false,           // nom espagnol sous les titres de catégorie
