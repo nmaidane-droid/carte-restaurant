@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casa García — Asilah</title>
+<meta name="theme-color" content="#0B2A5B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Karla:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CASA GARCÍA — Asilah
+   Chaux des murs de la médina + bleu cobalt des portes.
+   Le produit espagnol reste, la préparation se traduit.
+   ============================================================ */
+:root{
+  --chaux:#F2F0EB; --chaux-2:#E7E4DC;
+  --cobalt:#14428C; --cobalt-deep:#0B2A5B;
+  --ink:#16202E;    --ink-soft:#5C6675;
+  --ochre:#C88A2E;  --sand:#D6D0C4;
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --body:'Karla',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --pad:clamp(18px,5vw,32px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--chaux);color:var(--ink);font-family:var(--body);font-size:16px;
+  line-height:1.5;padding-bottom:96px;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--ochre);outline-offset:3px}
+
+.demo{background:var(--ochre);color:#231703;font-size:12.5px;padding:7px var(--pad);text-align:center}
+
+.wall{background:var(--cobalt-deep);color:var(--chaux);padding:18px var(--pad) 0}
+.wall-top{display:flex;justify-content:flex-end;margin-bottom:16px}
+.wall h1{font-family:var(--display);font-weight:800;line-height:.92;
+  font-size:clamp(42px,12vw,84px);letter-spacing:-.03em}
+.wall h1 em{font-style:normal;color:var(--ochre)}
+.wall .sub{font-size:13px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;
+  margin-top:12px;padding-bottom:26px}
+.azulejo{height:24px;background-repeat:repeat-x;background-size:24px 24px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%230B2A5B'/%3E%3Cpath d='M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z' fill='none' stroke='%23F2F0EB' stroke-width='1.3'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23C88A2E'/%3E%3C/svg%3E")}
+
+.globe{border:1px solid rgba(242,240,235,.35);border-radius:999px;padding:7px 14px;
+  font-size:13px;color:var(--chaux);display:flex;gap:7px;align-items:center}
+.globe:hover{background:rgba(242,240,235,.1)}
+.globe .fg{font-size:15px;line-height:1}
+
+nav{position:sticky;top:0;z-index:20;background:var(--chaux);border-bottom:1px solid var(--sand);
+  overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+.chips{display:flex;gap:6px;padding:11px var(--pad);min-width:100%}
+.chip{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;
+  border:1px solid var(--sand);border-radius:999px;padding:8px 4px;
+  font-size:clamp(12.5px,3.6vw,14.5px);color:var(--ink-soft)}
+.chip.on{background:var(--cobalt);border-color:var(--cobalt);color:var(--chaux)}
+
+main{padding:0 var(--pad)}
+section{padding:34px 0 6px;scroll-margin-top:58px}
+.cat{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  border-bottom:2px solid var(--cobalt);padding-bottom:9px}
+.cat h2{font-family:var(--display);font-weight:600;font-size:clamp(25px,6.5vw,34px);letter-spacing:-.02em}
+.cat span{font-style:italic;color:var(--ochre);font-size:15px}
+.sub-h{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:26px 0 2px}
+.sub-h h3{font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:.01em}
+.sub-h span{font-style:italic;color:var(--ochre);font-size:13px}
+.sub-h::after{content:"";flex:1;border-bottom:1px solid var(--sand);transform:translateY(-4px);min-width:20px}
+
+.dish{padding:14px 0;border-bottom:1px solid var(--chaux-2);display:flex;gap:13px;align-items:flex-start}
+.dish:last-child{border-bottom:0}
+.thumb{width:62px;height:62px;flex:none;border-radius:9px;overflow:hidden;position:relative;
+  border:1px solid var(--sand);background-repeat:repeat;background-size:21px 21px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='21' height='21'%3E%3Crect width='21' height='21' fill='%23EFECE5'/%3E%3Cpath d='M10.5 2 L19 10.5 L10.5 19 L2 10.5 Z' fill='none' stroke='%23D6D0C4' stroke-width='1'/%3E%3C/svg%3E")}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.dish .body{flex:1;min-width:0}
+.line{display:flex;align-items:baseline;gap:8px}
+.line .nm{flex:1 1 auto;min-width:0;font-weight:600;font-size:16px;line-height:1.2}
+.leader{flex:0 1 auto;border-bottom:1.5px dotted var(--sand);transform:translateY(-4px);min-width:14px}
+.price{flex:none;font-family:var(--mono);font-size:14px;color:var(--cobalt-deep);white-space:nowrap}
+.mkline{font-family:var(--mono);font-size:12.5px;color:var(--ochre);margin-top:4px}
+.orig{font-style:italic;font-size:13px;color:var(--ochre);margin-top:2px}
+.desc{color:var(--ink-soft);font-size:14px;margin-top:4px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.tag.arr{border-color:var(--ochre);color:var(--ochre);font-weight:600}
+.tag{font-size:11px;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--sand);
+  border-radius:3px;padding:2px 7px;color:var(--ink-soft)}
+.wrapq{position:relative;flex:none}
+.plus{width:38px;height:38px;border:1.5px solid var(--cobalt);border-radius:50%;color:var(--cobalt);
+  font-size:21px;line-height:1;display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s,transform .15s}
+.plus:hover{background:var(--cobalt);color:var(--chaux)}
+.plus.hit{background:var(--ochre);border-color:var(--ochre);color:#231703;transform:scale(.88)}
+.badge{position:absolute;top:-5px;inset-inline-end:-5px;background:var(--cobalt);color:var(--chaux);
+  font-family:var(--mono);font-size:11px;min-width:19px;height:19px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;padding:0 4px}
+/* formats bouteille (3/4 · 1/2) */
+.vars{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.var{border:1.5px solid var(--cobalt);border-radius:7px;padding:5px 11px;font-size:13px;
+  color:var(--cobalt);display:flex;gap:7px;align-items:center;transition:background .15s,color .15s}
+.var:hover{background:var(--cobalt);color:var(--chaux)}
+.var b{font-family:var(--mono);font-weight:500}
+.var .vq{background:var(--ochre);color:#231703;border-radius:999px;font-family:var(--mono);
+  font-size:11px;padding:0 6px}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--cobalt-deep);color:var(--chaux);
+  padding:14px var(--pad);padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:14px;transform:translateY(110%);transition:transform .25s ease}
+.bar.on{transform:none}
+.bar .count{font-size:13.5px;opacity:.75}
+.bar .sum{font-family:var(--mono);font-size:18px}
+.bar .go{background:var(--ochre);color:#231703;font-weight:600;border-radius:8px;
+  padding:11px 18px;font-size:15px;margin-inline-start:auto}
+
+.sheet{position:fixed;inset:0;z-index:50;display:none}
+.sheet.on{display:block}
+.veil{position:absolute;inset:0;background:rgba(11,42,91,.55)}
+.panel{position:absolute;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;background:var(--chaux);
+  border-radius:18px 18px 0 0;padding:var(--pad);
+  padding-bottom:calc(var(--pad) + env(safe-area-inset-bottom));
+  animation:rise .28s cubic-bezier(.2,.8,.3,1)}
+@keyframes rise{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
+.panel h3{font-family:var(--display);font-weight:600;font-size:24px;margin-bottom:16px;letter-spacing:-.02em}
+
+.langs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.lang{border:1px solid var(--sand);border-radius:10px;padding:14px 8px 12px;text-align:center;
+  background:#fff;transition:border-color .15s,transform .15s}
+.lang b{display:block;font-size:16.5px;font-weight:600;line-height:1.2}
+.lang .fg{display:block;font-size:24px;line-height:1;margin-top:8px}
+.lang:hover,.lang.on{border-color:var(--cobalt);transform:translateY(-2px)}
+.lang.on{box-shadow:inset 0 0 0 2px var(--cobalt)}
+
+.row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--chaux-2)}
+.row .nm{flex:1;font-weight:600;font-size:15px}
+.row .nm i{display:block;font-style:normal;font-weight:400;font-size:12.5px;color:var(--ochre)}
+.row .pr{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft)}
+.step{width:30px;height:30px;border:1px solid var(--sand);border-radius:50%;background:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1}
+.n{font-family:var(--mono);min-width:20px;text-align:center}
+.tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;
+  padding-top:14px;border-top:2px solid var(--cobalt)}
+.tot b{font-family:var(--display);font-size:20px}
+.tot span{font-family:var(--mono);font-size:22px}
+.mknote{font-size:12.5px;color:var(--ochre);margin-top:6px}
+label{display:block;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-soft);margin:15px 0 6px}
+label .lc{text-transform:none;letter-spacing:0}
+input,textarea{width:100%;font:inherit;background:#fff;border:1px solid var(--sand);
+  border-radius:8px;padding:11px 13px;color:var(--ink)}
+textarea{min-height:74px;resize:vertical}
+.send{width:100%;margin-top:20px;background:#25D366;color:#04310f;font-weight:600;
+  border-radius:10px;padding:15px;font-size:16.5px}
+.hint{font-size:13px;color:var(--ink-soft);margin-top:10px;text-align:center}
+.close{width:100%;margin-top:12px;padding:12px;color:var(--ink-soft);font-size:14.5px}
+.empty{text-align:center;color:var(--ink-soft);padding:34px 0}
+
+footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
+  border-top:1px solid var(--sand);margin-top:26px}
+
+@media(min-width:720px){
+  body{max-width:760px;margin:0 auto;box-shadow:0 0 0 1px var(--sand)}
+  .panel{max-width:760px;margin:0 auto}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="demo" id="demo"></div>
+
+<header class="wall">
+  <div class="wall-top">
+    <button class="globe" id="globe"><span class="fg" id="globeFlag">🇫🇷</span><span id="globeLbl">Français</span></button>
+  </div>
+  <h1>Casa <em>García</em></h1>
+  <div class="sub" id="sub"></div>
+</header>
+<div class="azulejo"></div>
+
+<nav><div class="chips" id="chips"></div></nav>
+<main id="menu"></main>
+<footer id="foot"></footer>
+
+<div class="bar" id="bar">
+  <div><div class="count" id="barCount"></div><div class="sum" id="barSum"></div></div>
+  <button class="go" id="barGo"></button>
+</div>
+
+<div class="sheet" id="langSheet">
+  <div class="veil" data-close></div>
+  <div class="panel"><h3 id="langTitle">Choisissez votre langue</h3><div class="langs" id="langGrid"></div></div>
+</div>
+
+<div class="sheet" id="cartSheet">
+  <div class="veil" data-close></div>
+  <div class="panel"><h3 id="cartTitle"></h3><div id="cartBody"></div></div>
+</div>
+
+<script>
+/* ============================================================
+   1. CONFIG — la seule partie à changer d'un client à l'autre
+   ============================================================ */
+const CONFIG = {
+  name:'Casa García', city:'Asilah', tagline:'Cocina española · Pescados y mariscos',
+  whatsapp:'212679323232',   // ⚠️ TEST (Nour) — mettre le numéro du restaurant avant mise en service
+  currency:'MAD',
+  orderLang:'fr',            // langue dans laquelle la cuisine reçoit la commande
+  address:'Asilah, Maroc',
+  demo:true,                 // ⚠️ false quand les prix auront été confirmés par le patron
+  photos:true,               // vignettes sur entrées / plats / desserts
+  showOrig:false,            // nom espagnol sous chaque plat
+  showEsCat:false,           // nom espagnol sous les titres de catégorie
+  langs:['fr','en','es','it','nl','de','he','ja','zh'],
+  default:'fr'
+};
+
+const LANGS = {
+  fr:{label:'Français',  flag:'🇫🇷', dir:'ltr'},
+  en:{label:'English',   flag:'🇬🇧', dir:'ltr'},
+  es:{label:'Español',   flag:'🇪🇸', dir:'ltr'},
+  it:{label:'Italiano',  flag:'🇮🇹', dir:'ltr'},
+  nl:{label:'Nederlands',flag:'🇳🇱', dir:'ltr'},
+  de:{label:'Deutsch',   flag:'🇩🇪', dir:'ltr'},
+  he:{label:'עברית',     flag:'🇮🇱', dir:'rtl'},
+  ja:{label:'日本語',     flag:'🇯🇵', dir:'ltr'},
+  zh:{label:'中文',       flag:'🇨🇳', dir:'ltr'}
+};
+
+/* ============================================================
+   2. CARTE — transcrite de la carte papier de Casa García
+   ------------------------------------------------------------
+   ORDRE DES TRADUCTIONS, TOUJOURS LE MÊME :
+        0.fr  1.en  2.es  3.it  4.nl  5.de  6.he  7.ja  8.zh
+   L([...]) transforme ce tableau en objet de langues.
+   L'espagnol (index 2) est le nom de service : c'est lui qui
+   s'affiche en petit sous le plat et qui part en cuisine.
+
+   Champs d'un plat :
+     id    identifiant unique
+     n     L([...])  nom dans les 9 langues
+     price prix en MAD  (null si prix au poids / au marché)
+     m     L([...])  mention à la place du prix : Kg, pièce, SM
+     d     L([...])  description facultative
+     v     [['3/4',250],['1/2',130]]  formats bouteille
+     p     'photos/xxx.jpg'  photo facultative
+     t     ['seafood','spicy',…]  étiquettes
+   ============================================================ */
+const ORDER = ['fr','en','es','it','nl','de','he','ja','zh'];
+const L = a => Object.fromEntries(ORDER.map((k,i) => [k, a[i]]));
+
+const MENU = [
+/* ---------------------------------------------------------- ENTRÉES */
+{ id:'entrees', pic:true,
+  cat:L(['Entrées','Starters','Entrantes','Antipasti','Voorgerechten','Vorspeisen','מנות ראשונות','前菜','前菜']),
+  esCat:'Entrantes',
+  groups:[{ dishes:[
+  {id:'e1',price:45,p:'photos/e1.jpg',t:['veg'],
+   n:L(['Salade de poivrons','Roasted pepper salad','Ensalada de pimientos','Insalata di peperoni','Paprikasalade','Paprikasalat','סלט פלפלים קלויים','パプリカのサラダ','烤甜椒沙拉'])},
+  {id:'e2',price:45,p:'photos/e2.jpg',t:['veg'],
+   n:L(['Salade mixte','Mixed salad','Ensalada mixta','Insalata mista','Gemengde salade','Gemischter Salat','סלט מעורב','ミックスサラダ','什锦沙拉'])},
+  {id:'e3',price:45,p:'photos/e3.jpg',
+   n:L(['Salade russe','Russian salad','Ensalada rusa','Insalata russa','Russische salade','Russischer Salat','סלט רוסי','ロシア風ポテトサラダ','俄式土豆沙拉'])},
+  {id:'e4',price:75,p:'photos/e4.jpg',
+   n:L(['Anchois au vinaigre','Anchovies in vinegar','Boquerones en vinagre','Alici marinate','Ansjovis in azijn','Sardellen in Essig','אנשובי בחומץ','アンチョビの酢漬け','醋渍鳀鱼'])},
+  {id:'e5',price:130,p:'photos/e5.jpg',
+   n:L(['Jambon serrano','Serrano ham','Jamón serrano','Prosciutto serrano','Serranoham','Serrano-Schinken','חמון סראנו','生ハム（セラーノ）','西班牙塞拉诺火腿'])},
+  {id:'e6',price:125,p:'photos/e6.jpg',t:['veg'],
+   n:L(['Fromage manchego','Manchego cheese','Queso manchego','Formaggio manchego','Manchego-kaas','Manchego-Käse',"גבינת מנצ'גו",'マンチェゴチーズ','曼彻格奶酪'])},
+  {id:'e7',price:95,p:'photos/e7.jpg',t:['seafood'],
+   n:L(['Palourdes','Clams','Almejas','Vongole','Venusschelpen','Venusmuscheln','צדפות','アサリ','蛤蜊'])},
+  {id:'e8',price:95,p:'photos/e8.jpg',t:['seafood'],
+   n:L(['Salade de fruits de mer','Seafood salad','Salpicón de marisco','Insalata di mare','Zeevruchtensalade','Meeresfrüchtesalat','סלט פירות ים','シーフードサラダ','海鲜沙拉'])},
+  {id:'e9',price:80,p:'photos/e9.jpg',t:['gluten'],
+   n:L(['Croquettes','Croquettes','Croquetas','Crocchette','Kroketten','Kroketten','קרוקטים','クロケッタ','西班牙可乐饼'])},
+  {id:'e10',arr:true,price:null,m:L(['prix du jour','market price','precio del día','prezzo del giorno','dagprijs','Tagespreis','מחיר יומי','時価','时价']),t:['seafood'],
+   n:L(['Civelles','Baby eels','Angulas','Cieche','Glasaaltjes','Glasaale','זאטוטי צלופח','シラスウナギ','鳗鱼苗'])},
+  {id:'e11',arr:true,price:null,m:L(['au kg','per kg','por kg','al kg','per kg','pro kg','לק״ג','1kgあたり','按公斤']),t:['seafood'],
+   n:L(['Gambas','King prawns','Langostinos','Gamberoni','Grote garnalen','Riesengarnelen','שרימפס גדולים','大正エビ','大明虾'])},
+  {id:'e12',arr:true,price:null,m:L(['au kg','per kg','por kg','al kg','per kg','pro kg','לק״ג','1kgあたり','按公斤']),t:['seafood'],
+   n:L(['Homard','Lobster','Bogavante','Astice','Zeekreeft','Hummer','לובסטר','オマールエビ','波士顿龙虾'])},
+  {id:'e13',arr:true,price:null,m:L(['au kg','per kg','por kg','al kg','per kg','pro kg','לק״ג','1kgあたり','按公斤']),t:['seafood'],
+   n:L(['Langouste','Spiny lobster','Langosta','Aragosta','Langoest','Languste','לנגוסטה','イセエビ','龙虾'])},
+  {id:'e14',arr:true,price:null,m:L(['à la pièce','per piece','por pieza','al pezzo','per stuk','pro Stück','ליחידה','1匹あたり','按只']),t:['seafood'],
+   n:L(['Araignée de mer','Spider crab','Centollos','Grancevola','Zeespin','Seespinne','סרטן ים','クモガニ','蜘蛛蟹'])},
+  {id:'e15',arr:true,price:null,m:L(['au kg','per kg','por kg','al kg','per kg','pro kg','לק״ג','1kgあたり','按公斤']),t:['seafood'],
+   n:L(['Crevettes royales','Scarlet prawns','Carabineros','Gamberi rossi','Rode reuzengarnalen','Rote Riesengarnelen','שרימפס אדומים','赤エビ','红大虾'])},
+  {id:'e16',arr:true,price:null,m:L(['au kg','per kg','por kg','al kg','per kg','pro kg','לק״ג','1kgあたり','按公斤']),t:['seafood'],
+   n:L(['Langoustines','Langoustines','Cigalas','Scampi','Langoestines','Kaisergranat','לנגוסטין','手長エビ','挪威海螯虾'])}
+  ]}]
+},
+
+/* ---------------------------------------------------------- PLATS */
+{ id:'plats', pic:true,
+  cat:L(['Plats','Main courses','Platos','Piatti','Hoofdgerechten','Hauptgerichte','מנות עיקריות','メイン','主菜']),
+  esCat:'Platos',
+  groups:[
+  { sub:L(['Premiers plats','First plates','1er Plato','Primi piatti','Eerste gerechten','Erste Gänge','מנות ראשונות חמות','一の皿','头盘']),
+    esSub:'1er Plato', dishes:[
+    {id:'p1',price:40,p:'photos/p1.jpg',t:['seafood'],
+     n:L(['Soupe de poisson','Fish soup','Sopa de pescado','Zuppa di pesce','Vissoep','Fischsuppe','מרק דגים','魚のスープ','鱼汤'])},
+    {id:'p2',price:85,p:'photos/p2.jpg',t:['seafood','gluten'],
+     n:L(['Spaghetti aux fruits de mer','Seafood spaghetti','Espagueti marinera','Spaghetti allo scoglio','Spaghetti met zeevruchten','Spaghetti mit Meeresfrüchten','ספגטי פירות ים','魚介のスパゲッティ','海鲜意面'])},
+    {id:'p3',price:75,p:'photos/p3.jpg',t:['seafood'],
+     n:L(['Paella','Paella','Paella','Paella','Paella','Paella','פאייה','パエリア','西班牙海鲜饭'])},
+    {id:'p4',price:50,p:'photos/p4.jpg',t:['veg'],
+     n:L(['Omelette espagnole','Spanish omelette','Tortilla española','Tortilla spagnola','Spaanse omelet','Spanisches Omelett','חביתה ספרדית','スペイン風オムレツ','西班牙土豆蛋饼'])},
+    {id:'p5',price:40,p:'photos/p5.jpg',
+     n:L(['Omelette au thon','Tuna omelette','Tortilla de atún','Frittata al tonno','Omelet met tonijn','Thunfisch-Omelett','חביתת טונה','ツナのオムレツ','金枪鱼蛋饼'])},
+    {id:'p6',price:50,p:'photos/p6.jpg',
+     n:L(['Omelette au jambon','Ham omelette','Tortilla de jamón','Frittata al prosciutto','Omelet met ham','Schinken-Omelett','חביתת חמון','ハムのオムレツ','火腿蛋饼'])},
+    {id:'p7',price:40,p:'photos/p7.jpg',t:['veg'],
+     n:L(['Omelette au fromage','Cheese omelette','Tortilla de queso','Frittata al formaggio','Omelet met kaas','Käse-Omelett','חביתת גבינה','チーズのオムレツ','芝士蛋饼'])}
+  ]},
+  { sub:L(['Poissons & fruits de mer','Fish & seafood','Pescados','Pesce e frutti di mare','Vis & zeevruchten','Fisch & Meeresfrüchte','דגים ופירות ים','魚介料理','鱼类与海鲜']),
+    esSub:'Pescados', dishes:[
+    {id:'p8',price:110,p:'photos/p8.jpg',t:['seafood'],
+     n:L(['Gambas à la plancha','Griddled prawns','Gambas a la plancha','Gamberi alla piastra','Gambas van de plancha','Gambas von der Plancha',"שרימפס על הפלנצ'ה",'エビの鉄板焼き','铁板大虾'])},
+    {id:'p9',price:120,p:'photos/p9.jpg',t:['seafood'],
+     n:L(["Gambas à l'ail",'Garlic prawns','Gambas al ajillo',"Gambas all'aglio",'Gambas in knoflook','Gambas in Knoblauch','שרימפס בשום','エビのガーリック焼き','蒜香大虾'])},
+    {id:'p10',price:120,p:'photos/p10.jpg',t:['seafood'],
+     n:L(['Omelette aux crevettes','Prawn omelette','Tortilla de gambas','Frittata ai gamberi','Omelet met garnalen','Garnelen-Omelett','חביתת שרימפס','エビのオムレツ','虾仁蛋饼'])},
+    {id:'p11',price:125,p:'photos/p11.jpg',t:['seafood','gluten'],
+     n:L(['Calamars à la romaine','Fried squid rings','Calamares a la romana','Calamari fritti','Gefrituurde inktvisringen','Frittierte Calamari','טבעות קלמארי מטוגנות','イカリングフライ','炸鱿鱼圈'])},
+    {id:'p12',price:90,p:'photos/p12.jpg',t:['seafood'],
+     n:L(['Merlan','Whiting','Pescadilla','Nasello','Wijting','Wittling','מרלן','メルルーサ','无须鳕'])},
+    {id:'p13',price:90,p:'photos/p13.jpg',t:['seafood'],
+     n:L(['Sole (portion)','Sole (portion)','Lenguado (ración)','Sogliola (porzione)','Tong (portie)','Seezunge (Portion)','סול (מנה)','舌平目（1人前）','龙利鱼（份）'])},
+    {id:'p14',price:90,p:'photos/p14.jpg',t:['seafood'],
+     n:L(['Rougets','Red mullet','Salmonetes','Triglie','Mullen','Rotbarben','ברבוניה','ヒメジ','红鲻鱼'])},
+    {id:'p15',price:65,p:'photos/p15.jpg',t:['seafood'],
+     n:L(['Anchois frais','Fresh anchovies','Boquerones','Alici fresche','Verse ansjovis','Frische Sardellen','אנשובי טרי','カタクチイワシ','鲜鳀鱼'])},
+    {id:'p16',price:95,p:'photos/p16.jpg',t:['seafood'],
+     n:L(['Espadon','Swordfish','Espadón','Pesce spada','Zwaardvis','Schwertfisch','דג חרב','メカジキ','剑鱼'])},
+    {id:'p17',price:125,p:'photos/p17.jpg',t:['seafood'],
+     n:L(['Petits calamars','Baby squid','Almendritas','Calamaretti','Kleine inktvisjes','Kleine Calamari','קלמארי קטן','小イカ','小鱿鱼'])},
+    {id:'p18',price:50,p:'photos/p18.jpg',t:['seafood'],
+     n:L(['Sardines','Sardines','Sardinas','Sardine','Sardines','Sardinen','סרדינים','イワシの炭火焼き','沙丁鱼'])}
+  ]},
+  { sub:L(['Viandes','Meat','Carnes','Carni','Vlees','Fleisch','בשרים','肉料理','肉类']),
+    esSub:'Carnes', dishes:[
+    {id:'p19',price:130,p:'photos/p19.jpg',
+     n:L(['Bifteck de bœuf','Beef steak','Filete de ternera','Bistecca di manzo','Biefstuk','Rindersteak','סטייק בקר','牛ステーキ','牛排'])},
+    {id:'p20',price:130,p:'photos/p20.jpg',
+     n:L(['Bifteck à la tomate','Steak with tomato','Filetillos con tomate','Straccetti al pomodoro','Biefstuk met tomaat','Steak mit Tomate','סטייק ברוטב עגבניות','牛肉のトマト煮','番茄牛肉'])},
+    {id:'p21',price:100,p:'photos/p21.jpg',
+     n:L(['Kefta','Kefta','Kefta','Kefta','Kefta','Kefta','כפתה','ケフタ（モロッコ風肉団子）','摩洛哥肉丸'])}
+  ]},
+  { sub:L(['Spécialités de la maison','House specialities','Especialidad de la Casa','Specialità della casa','Specialiteiten van het huis','Spezialitäten des Hauses','מיוחדים של הבית','当店の名物','招牌菜']),
+    esSub:'Especialidad de la Casa', dishes:[
+    {id:'s1',arr:true,price:null,m:L(['prix du jour','market price','precio del día','prezzo del giorno','dagprijs','Tagespreis','מחיר יומי','時価','时价']),t:['seafood'],p:'photos/s1.jpg',
+     n:L(['Chaudron de poissons','Fisherman’s fish pot','Caldero de pescado','Caldero di pesce','Vispot','Fischtopf','סיר דגים','漁師風魚鍋','渔夫鱼锅']),
+     d:L(['Pour 2 personnes','For 2 people','Para 2 personas','Per 2 persone','Voor 2 personen','Für 2 Personen','ל־2 סועדים','2名様分','两人份'])},
+    {id:'s2',price:null,m:L(['prix du jour','market price','precio del día','prezzo del giorno','dagprijs','Tagespreis','מחיר יומי','時価','时价']),t:['seafood','gluten'],p:'photos/s2.jpg',
+     n:L(['Fideuà','Fideuà','Fideuà','Fideuà','Fideuà','Fideuà','פידאווה','フィデウア','西班牙细面海鲜锅']),
+     d:L(['Vermicelles aux fruits de mer · pour 4 personnes','Seafood noodle paella · for 4 people','Fideos con marisco · para 4 personas','Vermicelli ai frutti di mare · per 4 persone','Vermicelli met zeevruchten · voor 4 personen','Fadennudeln mit Meeresfrüchten · für 4 Personen','אטריות עם פירות ים · ל־4 סועדים','魚介の細麺パエリア · 4名様分','海鲜细面 · 四人份'])},
+    {id:'s3',price:null,m:L(['prix du jour','market price','precio del día','prezzo del giorno','dagprijs','Tagespreis','מחיר יומי','時価','时价']),t:['seafood'],p:'photos/s3.jpg',
+     n:L(['Riz noir','Black rice','Arroz negro','Riso nero','Zwarte rijst','Schwarzer Reis','אורז שחור','イカスミの黒いパエリア','墨鱼汁黑米饭']),
+     d:L(["À l'encre de seiche · pour 4 personnes",'With squid ink · for 4 people','Con tinta de sepia · para 4 personas','Al nero di seppia · per 4 persone','Met inktvisinkt · voor 4 personen','Mit Tintenfischtinte · für 4 Personen','בדיו דיונון · ל־4 סועדים','イカスミ入り · 4名様分','墨鱼汁 · 四人份'])},
+    {id:'s4',arr:true,price:null,m:L(['prix du jour','market price','precio del día','prezzo del giorno','dagprijs','Tagespreis','מחיר יומי','時価','时价']),t:['seafood'],p:'photos/s4.jpg',
+     n:L(['Riz crémeux au homard','Creamy rice with lobster','Arroz caldoso con bogavante','Riso all’astice','Romige rijst met kreeft','Cremiger Reis mit Hummer','אורז קרמי עם לובסטר','オマールエビの汁気パエリア','龙虾汤饭'])},
+    {id:'s5',price:null,m:L(['prix du jour','market price','precio del día','prezzo del giorno','dagprijs','Tagespreis','מחיר יומי','時価','时价']),t:['seafood'],p:'photos/s5.jpg',
+     n:L(['Rigamonte','Rigamonte','Rigamonte','Rigamonte','Rigamonte','Rigamonte','ריגמונטה','リガモンテ','Rigamonte 招牌拼盘'])}
+  ]}]
+},
+
+/* ---------------------------------------------------------- DESSERTS */
+{ id:'desserts', pic:true,
+  cat:L(['Desserts','Desserts','Postres','Dolci','Desserts','Desserts','קינוחים','デザート','甜点']),
+  esCat:'Postres',
+  groups:[{ dishes:[
+  {id:'ds1',price:30,p:'photos/ds1.jpg',t:['veg'],
+   n:L(['Flan caramel','Crème caramel','Flan','Crème caramel','Flan','Karamellpudding','קרם קרמל','プリン','焦糖布丁'])},
+  {id:'ds2',price:30,p:'photos/ds2.jpg',t:['veg'],
+   n:L(['Crème vanille','Vanilla cream','Natillas','Crema alla vaniglia','Vanillevla','Vanillecreme','קרם וניל','バニラクリーム','香草奶冻'])},
+  {id:'ds3',price:40,p:'photos/ds3.jpg',t:['veg','gluten'],
+   n:L(['Tarte au citron','Lemon tart','Tarta de limón','Torta al limone','Citroentaart','Zitronentarte','טארט לימון','レモンタルト','柠檬挞'])},
+  {id:'ds4',price:40,p:'photos/ds4.jpg',t:['veg'],
+   n:L(['Mousse au chocolat','Chocolate mousse','Tarta de chocolate','Mousse al cioccolato','Chocolademousse','Schokoladenmousse','מוס שוקולד','チョコレートムース','巧克力慕斯'])},
+  {id:'ds5',price:30,p:'photos/ds5.jpg',t:['veg'],
+   n:L(['Fruits de saison','Seasonal fruit','Fruta del tiempo','Frutta di stagione','Seizoensfruit','Obst der Saison','פירות העונה','季節のフルーツ','时令水果'])},
+  {id:'ds6',price:25,p:'photos/ds6.jpg',t:['veg'],
+   n:L(['Glace','Ice cream','Helado','Gelato','IJs','Eis','גלידה','アイスクリーム','冰淇淋'])},
+  {id:'ds7',price:40,p:'photos/ds7.jpg',t:['veg','gluten'],
+   n:L(['Flan au biscuit','Biscuit pudding','Puding','Budino di biscotti','Biscuitpudding','Biskuitpudding','פודינג ביסקוויטים','ビスケットプリン','饼干布丁'])}
+  ]}]
+},
+
+/* ---------------------------------------------------------- BOISSONS */
+{ id:'boissons', pic:false,
+  cat:L(['Boissons','Drinks','Bebidas','Bevande','Dranken','Getränke','משקאות','ドリンク','饮品']),
+  esCat:'Bebidas',
+  groups:[
+  { sub:L(['Sans alcool','Soft drinks','Sin alcohol','Analcolici','Frisdranken','Alkoholfrei','ללא אלכוהול','ソフトドリンク','无酒精饮品']),
+    esSub:'Sin alcohol', dishes:[
+    {id:'b1',price:20,n:L(['Oulmès (eau gazeuse)','Oulmès (sparkling water)','Oulmès','Oulmès (acqua frizzante)','Oulmès (bruisend water)','Oulmès (Sprudelwasser)','אולמס (מים מוגזים)','ウルメス（炭酸水）','Oulmès 气泡水'])},
+    {id:'b2',price:20,n:L(['Eau ½ L','Water ½ L','Agua ½ L','Acqua ½ L','Water ½ L','Wasser ½ L','מים ½ ליטר','水 ½ L','矿泉水 ½ L'])},
+    {id:'b3',price:35,n:L(['Eau 1,5 L','Water 1.5 L','Agua 1,5 L','Acqua 1,5 L','Water 1,5 L','Wasser 1,5 L','מים 1.5 ליטר','水 1.5 L','矿泉水 1.5 L'])},
+    {id:'b4',price:25,n:L(['Sodas','Soft drinks','Refrescos','Bibite','Frisdrank','Softdrinks','משקאות קלים','ソフトドリンク','汽水'])},
+    {id:'b5',price:35,n:L(['Jus de fruits pressé','Fresh fruit juice','Zumo natural','Succo fresco','Vers geperst sap','Frisch gepresster Saft','מיץ סחוט טרי','生搾りジュース','鲜榨果汁'])},
+    {id:'b6',price:30,n:L(['Café Lavazza','Lavazza coffee','Café Lavazza','Caffè Lavazza','Lavazza koffie','Lavazza Kaffee','קפה לוואצה','ラバッツァコーヒー','Lavazza 咖啡'])},
+    {id:'b7',price:20,n:L(['Café ou thé','Coffee or tea','Café, Té','Caffè o tè','Koffie of thee','Kaffee oder Tee','קפה או תה','コーヒー・紅茶','咖啡或茶'])}
+  ]},
+  { sub:L(['Vins rouges','Red wines','Vinos tintos','Vini rossi','Rode wijnen','Rotweine','יינות אדומים','赤ワイン','红葡萄酒']),
+    esSub:'Vinos Tintos', dishes:[
+    {id:'w1',price:375,n:L(['Ithaque','Ithaque','Ithaque','Ithaque','Ithaque','Ithaque','איתקה','イタケ','Ithaque'])},
+    {id:'w2',v:[['3/4',300],['1/2',160]],n:L(['Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','טר סובאז','テール・ソヴァージュ','Terre Sauvage'])},
+    {id:'w3',v:[['3/4',250],['1/2',130]],n:L(['Casa García','Casa García','Casa García','Casa García','Casa García','Casa García','קאסה גרסיה','カサ・ガルシア','Casa García'])},
+    {id:'w4',price:290,n:L(['Domaines Amal','Domaines Amal','Domaines Amal','Domaines Amal','Domaines Amal','Domaines Amal','דומיין אמל','ドメーヌ・アマル','Domaines Amal'])},
+    {id:'w5',v:[['3/4',250],['1/2',160]],n:L(['La Terre','La Terre','La Terre','La Terre','La Terre','La Terre','לה טר','ラ・テール','La Terre'])},
+    {id:'w6',price:250,n:L(['Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','לה קולין דו מנזה','レ・コリーヌ・デュ・メンゼ','Les Collines du Menzeh'])},
+    {id:'w7',price:400,n:L(["Vins d'importation",'Imported wines','Vinos de importación','Vini d’importazione','Geïmporteerde wijnen','Importweine','יינות מיובאים','輸入ワイン','进口葡萄酒'])}
+  ]},
+  { sub:L(['Vins rosés','Rosé wines','Vinos rosados','Vini rosati','Rosé wijnen','Roséweine','יינות רוזה','ロゼワイン','桃红葡萄酒']),
+    esSub:'Vinos Rosados', dishes:[
+    {id:'w8',v:[['3/4',300],['1/2',160]],n:L(['Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','טר סובאז','テール・ソヴァージュ','Terre Sauvage'])},
+    {id:'w9',v:[['3/4',250],['1/2',160]],n:L(['La Terre','La Terre','La Terre','La Terre','La Terre','La Terre','לה טר','ラ・テール','La Terre'])},
+    {id:'w10',v:[['3/4',250],['1/2',130]],n:L(['Casa García','Casa García','Casa García','Casa García','Casa García','Casa García','קאסה גרסיה','カサ・ガルシア','Casa García'])}
+  ]},
+  { sub:L(['Vins blancs','White wines','Vinos blancos','Vini bianchi','Witte wijnen','Weißweine','יינות לבנים','白ワイン','白葡萄酒']),
+    esSub:'Vinos Blancos', dishes:[
+    {id:'w11',price:250,n:L(['Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','Les Collines du Menzeh','לה קולין דו מנזה','レ・コリーヌ・デュ・メンゼ','Les Collines du Menzeh'])},
+    {id:'w12',v:[['3/4',300],['1/2',160]],n:L(['Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','Terre Sauvage','טר סובאז','テール・ソヴァージュ','Terre Sauvage'])},
+    {id:'w13',v:[['3/4',250],['1/2',130]],n:L(['La Terre','La Terre','La Terre','La Terre','La Terre','La Terre','לה טר','ラ・テール','La Terre'])},
+    {id:'w14',v:[['3/4',250],['1/2',130]],n:L(['Casa García','Casa García','Casa García','Casa García','Casa García','Casa García','קאסה גרסיה','カサ・ガルシア','Casa García'])},
+    {id:'w15',price:null,m:L(['prix du jour','market price','precio del día','prezzo del giorno','dagprijs','Tagespreis','מחיר יומי','時価','时价']),
+     n:L(["Vins d'importation",'Imported wines','Vinos de importación','Vini d’importazione','Geïmporteerde wijnen','Importweine','יינות מיובאים','輸入ワイン','进口葡萄酒'])}
+  ]},
+  { sub:L(['Vin gris','Grey wine','Vino gris','Vino grigio','Grijze wijn','Grauwein','יין אפור','ヴァン・グリ','灰葡萄酒']),
+    esSub:'Vino Gris', dishes:[
+    {id:'w16',v:[['3/4',250],['1/2',130]],n:L(['Casa García','Casa García','Casa García','Casa García','Casa García','Casa García','קאסה גרסיה','カサ・ガルシア','Casa García'])},
+    {id:'w17',price:250,n:L(['Larroque','Larroque','Larroque','Larroque','Larroque','Larroque','לארוק','ラロック','Larroque'])}
+  ]},
+  { sub:L(['Bières','Beers','Cervezas','Birre','Bieren','Biere','בירות','ビール','啤酒']),
+    esSub:'Cervezas', dishes:[
+    {id:'c1',price:45,n:L(['Casablanca','Casablanca','Casablanca','Casablanca','Casablanca','Casablanca','קזבלנקה','カサブランカ','Casablanca'])},
+    {id:'c2',price:35,n:L(['Flag Spéciale','Flag Spéciale','Flag SP','Flag Spéciale','Flag Spéciale','Flag Spéciale','פלאג ספיישל','フラッグ・スペシャル','Flag Spéciale'])},
+    {id:'c3',price:40,n:L(['Bière sans alcool','Alcohol-free beer','Cerveza sin alcohol','Birra analcolica','Alcoholvrij bier','Alkoholfreies Bier','בירה ללא אלכוהול','ノンアルコールビール','无酒精啤酒'])},
+    {id:'c4',price:50,n:L(["Bière d'importation 33 cl",'Imported beer 33 cl','Cerveza importación 1/3','Birra d’importazione 33 cl','Geïmporteerd bier 33 cl','Importbier 33 cl','בירה מיובאת 33 מ״ל','輸入ビール 330ml','进口啤酒 330ml'])}
+  ]},
+  { sub:L(['Spiritueux','Spirits','Licores','Liquori','Sterke drank','Spirituosen','אלכוהול חריף','スピリッツ','烈酒']),
+    esSub:'Licores', dishes:[
+    {id:'l1',price:100,n:L(['Premium — vodka, gin, rhum, whisky','Premium — vodka, gin, rum, whisky','Premium — vodka, ginebra, ron, whisky','Premium — vodka, gin, rum, whisky','Premium — wodka, gin, rum, whisky','Premium — Wodka, Gin, Rum, Whisky','פרימיום — וודקה, ג׳ין, רום, ויסקי','プレミアム — ウォッカ、ジン、ラム、ウイスキー','高级 — 伏特加、金酒、朗姆、威士忌'])},
+    {id:'l2',price:65,n:L(['Vodka, gin, rhum, whisky','Vodka, gin, rum, whisky','Vodka, ginebra, ron, whisky','Vodka, gin, rum, whisky','Wodka, gin, rum, whisky','Wodka, Gin, Rum, Whisky','וודקה, ג׳ין, רום, ויסקי','ウォッカ、ジン、ラム、ウイスキー','伏特加、金酒、朗姆、威士忌'])},
+    {id:'l3',price:65,n:L(['Ricard','Ricard','Ricard','Ricard','Ricard','Ricard','ריקאר','リカール','Ricard'])},
+    {id:'l4',price:75,n:L(['Campari','Campari','Campari','Campari','Campari','Campari','קמפרי','カンパリ','金巴利'])},
+    {id:'l5',price:75,n:L(['Martini','Martini','Martini','Martini','Martini','Martini','מרטיני','マティーニ','马天尼'])},
+    {id:'l6',price:75,n:L(['Cognac','Cognac','Cognac normal','Cognac','Cognac','Cognac','קוניאק','コニャック','干邑'])},
+    {id:'l7',price:90,n:L(['Cognac premium','Premium cognac','Cognac premium','Cognac premium','Cognac premium','Cognac Premium','קוניאק פרימיום','プレミアムコニャック','高级干邑'])},
+    {id:'l8',price:200,n:L(['Sangria (pichet)','Sangria (jug)','Sangría','Sangria (caraffa)','Sangria (kan)','Sangria (Krug)','סנגריה (קנקן)','サングリア（ピッチャー）','桑格利亚（壶）'])},
+    {id:'l9',price:160,n:L(['Tinto de verano (pichet)','Tinto de verano (jug)','Tinto de verano','Tinto de verano (caraffa)','Tinto de verano (kan)','Tinto de verano (Krug)','טינטו דה ורano (קנקן)','ティント・デ・ベラーノ','夏日红酒气泡饮（壶）'])}
+  ]}]
+}
+];
+
+/* ============================================================
+   3. TEXTES D'INTERFACE
+   ============================================================ */
+const UI = {
+ pick:L(['Choisissez votre langue','Choose your language','Elija su idioma','Scegli la tua lingua','Kies uw taal','Wählen Sie Ihre Sprache','בחרו את השפה שלכם','言語を選択してください','请选择语言']),
+ order:L(['Ma commande','My order','Mi pedido','Il mio ordine','Mijn bestelling','Meine Bestellung','ההזמנה שלי','ご注文','我的订单']),
+ empty:L(['Votre commande est vide','Your order is empty','Su pedido está vacío','Il tuo ordine è vuoto','Uw bestelling is leeg','Ihre Bestellung ist leer','ההזמנה שלך ריקה','ご注文は空です','您的订单为空']),
+ emptyHint:L(['Ajoutez des plats depuis la carte.','Add dishes from the menu.','Añada platos desde la carta.','Aggiungi piatti dal menu.','Voeg gerechten toe uit de kaart.','Fügen Sie Gerichte aus der Karte hinzu.','הוסיפו מנות מהתפריט.','メニューから料理を追加してください。','请从菜单中添加菜品。']),
+ table:L(['Numéro de table','Table number','Número de mesa','Numero del tavolo','Tafelnummer','Tischnummer','מספר שולחן','テーブル番号','桌号']),
+ name:L(['Votre nom','Your name','Su nombre','Il tuo nome','Uw naam','Ihr Name','השם שלך','お名前','您的姓名']),
+ opt:L(['facultatif','optional','opcional','facoltativo','optioneel','optional','רשות','任意','选填']),
+ note:L(['Remarque','Note','Comentario','Nota','Opmerking','Anmerkung','הערה','備考','备注']),
+ notePh:L(['Allergies, cuisson, sans piment…','Allergies, cooking, no chilli…','Alergias, punto de cocción, sin picante…','Allergie, cottura, senza peperoncino…','Allergieën, bereiding, niet pittig…','Allergien, Garstufe, ohne Chili…','אלרגיות, מידת בישול, בלי חריף…','アレルギー、焼き加減、辛さ控えめなど','过敏、熟度、不要辣…']),
+ total:L(['Total','Total','Total','Totale','Totaal','Gesamt','סה״כ','合計','合计']),
+ items:L(['articles','items','artículos','articoli','artikelen','Artikel','פריטים','点','件']),
+ send:L(['Envoyer sur WhatsApp','Send on WhatsApp','Enviar por WhatsApp','Invia su WhatsApp','Verstuur via WhatsApp','Über WhatsApp senden','שליחה בוואטסאפ','WhatsAppで送信','通过 WhatsApp 发送']),
+ sendHint:L(["La commande s'ouvre dans WhatsApp. Vérifiez-la avant d'envoyer.",'The order opens in WhatsApp. Check it before sending.','El pedido se abre en WhatsApp. Revíselo antes de enviarlo.',"L'ordine si apre in WhatsApp. Controllalo prima di inviare.",'De bestelling opent in WhatsApp. Controleer voor het versturen.','Die Bestellung öffnet sich in WhatsApp. Bitte vor dem Senden prüfen.','ההזמנה תיפתח בוואטסאפ. בדקו לפני השליחה.','注文内容がWhatsAppで開きます。送信前にご確認ください。','订单将在 WhatsApp 中打开，发送前请确认。']),
+ back:L(['Retour à la carte','Back to menu','Volver a la carta','Torna al menu','Terug naar de kaart','Zurück zur Karte','חזרה לתפריט','メニューに戻る','返回菜单']),
+ view:L(['Voir','View','Ver','Vedi','Bekijken','Ansehen','הצג','確認','查看']),
+ addTo:L(['Ajouter','Add','Añadir','Aggiungi','Toevoegen','Hinzufügen','הוסף','追加','添加']),
+ mkNote:L(['Certains articles sont facturés au poids ou selon le marché. Le serveur vous confirmera le prix.','Some items are priced by weight or at market price. Your waiter will confirm.','Algunos artículos se cobran al peso o según mercado. El camarero se lo confirmará.','Alcuni articoli sono a peso o secondo mercato. Il cameriere confermerà il prezzo.','Sommige gerechten worden per gewicht of tegen dagprijs berekend. De ober bevestigt de prijs.','Einige Artikel werden nach Gewicht oder zum Tagespreis berechnet. Der Kellner bestätigt den Preis.','חלק מהפריטים מתומחרים לפי משקל או מחיר שוק. המלצר יאשר את המחיר.','一部の品は量り売りまたは時価です。価格は係員がご案内します。','部分菜品按重量或时价计费，服务员将为您确认价格。']),
+ arrival:L(['Selon arrivage','Subject to the catch','Según llegada','Secondo il pescato','Afhankelijk van de aanvoer','Je nach Fang','לפי הדיג היומי','入荷次第','视当日进货']),
+ arrivalNote:L(['Certains plats dépendent de la pêche du jour. Demandez au serveur avant de commander.','Some dishes depend on the day’s catch. Please ask your waiter before ordering.','Algunos platos dependen de la pesca del día. Pregunte al camarero antes de pedir.','Alcuni piatti dipendono dal pescato del giorno. Chieda al cameriere prima di ordinare.','Sommige gerechten hangen af van de dagvangst. Vraag het de ober voor u bestelt.','Einige Gerichte hängen vom Tagesfang ab. Fragen Sie bitte den Kellner vor der Bestellung.','חלק מהמנות תלויות בדיג היומי. שאלו את המלצר לפני ההזמנה.','一部の料理は本日の水揚げ次第です。ご注文前に係員にお尋ねください。','部分菜品视当日渔获而定，点单前请咨询服务员。']),
+ veg:L(['Végétarien','Vegetarian','Vegetariano','Vegetariano','Vegetarisch','Vegetarisch','צמחוני','ベジタリアン','素食']),
+ spicy:L(['Épicé','Spicy','Picante','Piccante','Pittig','Scharf','חריף','辛口','辣']),
+ seafood:L(['Fruits de mer','Seafood','Marisco','Frutti di mare','Zeevruchten','Meeresfrüchte','פירות ים','魚介','海鲜']),
+ gluten:L(['Gluten','Gluten','Gluten','Glutine','Gluten','Gluten','גלוטן','小麦','麸质']),
+ nuts:L(['Fruits à coque','Nuts','Frutos secos','Frutta a guscio','Noten','Schalenfrüchte','אגוזים','ナッツ','坚果']),
+ demo:L(['Prix relevés sur la carte papier — à confirmer avec le restaurant.','Prices taken from the printed menu — to be confirmed with the restaurant.','Precios tomados de la carta impresa — a confirmar con el restaurante.','Prezzi rilevati dal menu cartaceo — da confermare con il ristorante.','Prijzen overgenomen van de papieren kaart — te bevestigen met het restaurant.','Preise von der gedruckten Karte — mit dem Restaurant zu bestätigen.','המחירים נלקחו מהתפריט המודפס — לאישור מול המסעדה.','紙のメニューから転記した価格です。店舗にご確認ください。','价格取自纸质菜单，请与餐厅确认。'])
+};
+
+/* ============================================================
+   4. LOGIQUE
+   ============================================================ */
+let lang = CONFIG.default;
+let activeCat = MENU[0].id;          // une seule catégorie affichée à la fois
+let cart = {};                       // { "id" ou "id|3/4" : quantité }
+const $ = s => document.querySelector(s);
+const t = k => UI[k][lang] || UI[k].fr;
+const nameOf = d => d.n[lang] || d.n.fr;
+const esOf   = d => d.n.es;
+const money  = n => n + ' ' + CONFIG.currency;
+const groupsOf = c => c.groups;
+const allDishes = () => MENU.flatMap(c => c.groups.flatMap(g => g.dishes));
+const findDish  = id => allDishes().find(d => d.id === id);
+const showOrig  = d => CONFIG.showOrig && esOf(d) && esOf(d) !== nameOf(d);
+
+/* une clé de panier = "id" ou "id|format" */
+function resolve(key){
+  const [id, k] = key.split('|');
+  const d = findDish(id);
+  if(!d) return null;
+  if(k){ const v = (d.v||[]).find(x => x[0] === k); return {d, k, price:v ? v[1] : null}; }
+  return {d, k:null, price:d.price};
+}
+const count = () => Object.values(cart).reduce((a,b)=>a+b, 0);
+const total = () => Object.entries(cart).reduce((s,[key,q]) => {
+  const r = resolve(key); return s + (r && r.price ? r.price*q : 0);
+}, 0);
+const hasMarket = () => Object.keys(cart).some(k => { const r = resolve(k); return r && !r.price; });
+
+function setLang(l){
+  lang = l;
+  document.documentElement.lang = l;
+  document.documentElement.dir  = LANGS[l].dir;
+  $('#globeLbl').textContent  = LANGS[l].label;
+  $('#globeFlag').textContent = LANGS[l].flag;
+  $('#langTitle').textContent = t('pick');
+  $('#demo').textContent   = CONFIG.demo ? t('demo') : '';
+  $('#demo').style.display = CONFIG.demo ? '' : 'none';
+  $('#sub').textContent  = CONFIG.city + ' · ' + CONFIG.tagline;
+  $('#foot').textContent = CONFIG.name + ' · ' + CONFIG.address;
+  renderChips(); renderMenu(); renderBar(); renderLangGrid();
+}
+
+function renderLangGrid(){
+  $('#langGrid').innerHTML = CONFIG.langs.map(l =>
+    `<button class="lang ${l===lang?'on':''}" data-lang="${l}">
+       <b>${LANGS[l].label}</b><span class="fg">${LANGS[l].flag}</span></button>`).join('');
+}
+
+function renderChips(){
+  $('#chips').innerHTML = MENU.map(c =>
+    `<button class="chip ${c.id===activeCat?'on':''}" data-go="${c.id}">${c.cat[lang]||c.cat.fr}</button>`).join('');
+}
+
+/* Prix chiffré : sur la ligne du nom, avec les pointillés.
+   Mention libre (au kg, prix du jour) : sur sa propre ligne, pour ne pas
+   écraser le nom du plat. Bouteilles à formats : le prix est sur les boutons. */
+function priceCell(d){
+  if(d.price != null) return `<span class="leader"></span><span class="price">${money(d.price)}</span>`;
+  return '';
+}
+function marketLine(d){
+  if(d.price != null || d.v) return '';
+  return `<div class="mkline">${d.m ? (d.m[lang]||d.m.fr) : '—'}</div>`;
+}
+
+function dishHTML(d, withPic){
+  const qty = cart[d.id] || 0;
+  const thumb = withPic
+    ? `<span class="thumb">${d.p ? `<img src="${d.p}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`
+    : '';
+  const controls = d.v
+    ? `<div class="vars">${d.v.map(([k,pr]) => {
+         const q = cart[d.id+'|'+k] || 0;
+         return `<button class="var" data-add="${d.id}|${k}">${k}
+                   <b>${money(pr)}</b>${q ? `<span class="vq">${q}</span>` : ''}</button>`;
+       }).join('')}</div>`
+    : '';
+  const plus = d.v ? '' : `<div class="wrapq">
+        <button class="plus" data-add="${d.id}" aria-label="${t('addTo')} — ${nameOf(d)}">+</button>
+        ${qty ? `<span class="badge">${qty}</span>` : ''}</div>`;
+  return `<div class="dish">
+    ${thumb}
+    <div class="body">
+      <div class="line"><span class="nm">${nameOf(d)}</span>${priceCell(d)}</div>
+      ${marketLine(d)}
+      ${showOrig(d) ? `<div class="orig">${esOf(d)}</div>` : ''}
+      ${d.d ? `<div class="desc">${d.d[lang]||d.d.fr}</div>` : ''}
+      ${(d.arr || (d.t && d.t.length)) ? `<div class="tags">
+        ${d.arr ? `<span class="tag arr">${t('arrival')}</span>` : ''}
+        ${(d.t||[]).map(g=>`<span class="tag">${t(g)}</span>`).join('')}</div>` : ''}
+      ${controls}
+    </div>
+    ${plus}
+  </div>`;
+}
+
+function renderMenu(){
+  $('#menu').innerHTML = MENU.filter(c => c.id === activeCat).map(c => `
+    <section id="sec-${c.id}">
+      <div class="cat"><h2>${c.cat[lang]||c.cat.fr}</h2>${CONFIG.showEsCat?`<span>${c.esCat}</span>`:''}</div>
+      ${groupsOf(c).map(g => `
+        ${g.sub ? `<div class="sub-h"><h3>${g.sub[lang]||g.sub.fr}</h3>${CONFIG.showEsCat?`<span>${g.esSub}</span>`:''}</div>` : ''}
+        ${g.dishes.map(d => dishHTML(d, c.pic && CONFIG.photos)).join('')}
+      `).join('')}
+    </section>`).join('');
+}
+
+function renderBar(){
+  const n = count();
+  $('#bar').classList.toggle('on', n > 0);
+  $('#barCount').textContent = n + ' ' + t('items');
+  $('#barSum').textContent   = money(total()) + (hasMarket() ? ' +' : '');
+  $('#barGo').textContent    = t('view');
+}
+
+function renderCart(){
+  $('#cartTitle').textContent = t('order');
+  const keys = Object.keys(cart);
+  const anyArr = keys.some(k => { const r = resolve(k); return r && r.d.arr; });
+  if(!keys.length){
+    $('#cartBody').innerHTML =
+      `<div class="empty"><b>${t('empty')}</b><br>${t('emptyHint')}</div>
+       <button class="close" data-close>${t('back')}</button>`;
+    return;
+  }
+  $('#cartBody').innerHTML = `
+    ${keys.map(key => { const r = resolve(key); const d = r.d; return `
+      <div class="row">
+        <span class="nm">${nameOf(d)}${r.k ? ' · '+r.k : ''}
+          ${d.arr ? `<i>${t('arrival')}</i>` : ''}</span>
+        <span class="pr">${r.price ? money(r.price*cart[key]) : (d.m ? (d.m[lang]||d.m.fr) : '—')}</span>
+        <button class="step" data-dec="${key}">−</button>
+        <span class="n">${cart[key]}</span>
+        <button class="step" data-inc="${key}">+</button>
+      </div>`;}).join('')}
+    <div class="tot"><b>${t('total')}</b><span>${money(total())}${hasMarket()?' +':''}</span></div>
+    ${hasMarket() ? `<div class="mknote">${t('mkNote')}</div>` : ''}
+    ${anyArr ? `<div class="mknote">${t('arrivalNote')}</div>` : ''}
+    <label for="tbl">${t('table')}</label>
+    <input id="tbl" inputmode="numeric" autocomplete="off">
+    <label for="who">${t('name')} <span class="lc">(${t('opt')})</span></label>
+    <input id="who" autocomplete="name">
+    <label for="nt">${t('note')} <span class="lc">(${t('opt')})</span></label>
+    <textarea id="nt" placeholder="${t('notePh')}"></textarea>
+    <button class="send" id="send">${t('send')}</button>
+    <div class="hint">${t('sendHint')}</div>
+    <button class="close" data-close>${t('back')}</button>`;
+}
+
+/* La cuisine reçoit tout dans CONFIG.orderLang : libellés ET noms de plats.
+   La carte papier de Casa García est trilingue (es / fr / en), donc ces trois
+   langues sont comprises en salle comme en cuisine. */
+function buildMessage(){
+  const K = CONFIG.orderLang;
+  const kitchen = d => d.n[K] || d.n.fr;
+  const lbl = {
+    es:{h:'Nuevo pedido',t:'Mesa',n:'Nombre',s:'Total',r:'Comentario',g:'Idioma del cliente',m:'(precio a confirmar)',a:'(disp. a confirmar)'},
+    fr:{h:'Nouvelle commande',t:'Table',n:'Nom',s:'Total',r:'Remarque',g:'Langue du client',m:'(prix à confirmer)',a:'(dispo à confirmer)'},
+    en:{h:'New order',t:'Table',n:'Name',s:'Total',r:'Note',g:'Guest language',m:'(price to confirm)',a:'(availability to confirm)'}
+  }[CONFIG.orderLang] || {h:'Nouvelle commande',t:'Table',n:'Nom',s:'Total',r:'Remarque',g:'Langue du client',m:'(prix à confirmer)',a:'(dispo à confirmer)'};
+
+  const tbl = ($('#tbl')?.value || '').trim();
+  const who = ($('#who')?.value || '').trim();
+  const nt  = ($('#nt')?.value  || '').trim();
+
+  let m = `*${CONFIG.name} — ${lbl.h}*\n`;
+  if(tbl) m += `${lbl.t} : ${tbl}\n`;
+  if(who) m += `${lbl.n} : ${who}\n`;
+  m += `${'—'.repeat(12)}\n`;
+  for(const [key,q] of Object.entries(cart)){
+    const r = resolve(key);
+    m += `${q} × ${kitchen(r.d)}${r.k ? ' ('+r.k+')' : ''} — ${r.price ? money(r.price*q) : lbl.m}${r.d.arr ? ' '+lbl.a : ''}\n`;
+  }
+  m += `${'—'.repeat(12)}\n*${lbl.s} : ${money(total())}${hasMarket()?' +':''}*\n`;
+  if(nt) m += `${lbl.r} : ${nt}\n`;
+  m += `${lbl.g} : ${LANGS[lang].flag} ${LANGS[lang].label}`;
+  return m;
+}
+
+/* ---------- interactions ---------- */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-add],[data-inc],[data-dec],[data-go],[data-lang],[data-close]');
+  if(el){
+    if(el.dataset.add){
+      const k = el.dataset.add;
+      cart[k] = (cart[k]||0) + 1;
+      el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'), 180);
+      renderMenu(); renderBar(); return;
+    }
+    if(el.dataset.inc){ cart[el.dataset.inc]++; renderCart(); renderBar(); renderMenu(); return; }
+    if(el.dataset.dec){
+      const k = el.dataset.dec;
+      if(--cart[k] <= 0) delete cart[k];
+      renderCart(); renderBar(); renderMenu(); return;
+    }
+    if(el.dataset.go){
+      activeCat = el.dataset.go;
+      renderChips(); renderMenu();
+      document.getElementById('sec-'+activeCat)
+              .scrollIntoView({behavior:'smooth', block:'start'});
+      return;
+    }
+    if(el.dataset.lang){ setLang(el.dataset.lang); $('#langSheet').classList.remove('on'); return; }
+    if(el.hasAttribute('data-close')){
+      $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on'); return;
+    }
+  }
+  if(e.target.id === 'send'){
+    window.open('https://wa.me/' + CONFIG.whatsapp + '?text=' + encodeURIComponent(buildMessage()), '_blank');
+  }
+});
+
+$('#globe').onclick = () => $('#langSheet').classList.add('on');
+$('#barGo').onclick = () => { renderCart(); $('#cartSheet').classList.add('on'); };
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on'); }
+});
+
+setLang(CONFIG.default);
+$('#langSheet').classList.add('on');
+</script>
+</body>
+</html>
