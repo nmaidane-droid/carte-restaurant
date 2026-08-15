@@ -155,6 +155,39 @@ textarea{min-height:74px;resize:vertical}
 .close{width:100%;margin-top:12px;padding:12px;color:var(--ink-soft);font-size:14.5px}
 .empty{text-align:center;color:var(--ink-soft);padding:34px 0}
 
+/* ---------- administration photos ---------- */
+.pinwrap{max-width:270px;margin:0 auto}
+.dots{display:flex;gap:11px;justify-content:center;margin:16px 0 22px}
+.dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--cobalt)}
+.dot.on{background:var(--cobalt)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.key{background:#fff;border:1px solid var(--sand);border-radius:11px;padding:16px 0;
+  font-family:var(--mono);font-size:21px;color:var(--cobalt-deep)}
+.key:active{background:var(--cobalt);color:var(--chaux)}
+.key.alt{font-family:var(--body);font-size:15px}
+.pinerr{text-align:center;color:#B3261E;font-size:13.5px;min-height:20px;margin-top:12px}
+
+.adm-bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.adm-bar button{border:1.5px solid var(--cobalt);color:var(--cobalt);border-radius:8px;
+  padding:9px 13px;font-size:13.5px}
+.adm-bar button.solid{background:var(--cobalt);color:var(--chaux)}
+.adm-bar button.warn{border-color:#B3261E;color:#B3261E}
+.adm-log{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);min-height:20px;margin-bottom:10px}
+.adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:11px}
+.adm-cell{text-align:center}
+.adm-cell .sq{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--sand);
+  position:relative;background:var(--chaux-2);display:block}
+.adm-cell .sq img{width:100%;height:100%;object-fit:cover;display:block}
+.adm-cell .sq.none::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:26px;color:var(--sand)}
+.adm-cell b{display:block;font-size:11.5px;font-weight:600;margin-top:5px;line-height:1.25}
+.adm-cell .mini{display:flex;gap:5px;justify-content:center;margin-top:5px}
+.adm-cell .mini button{border:1px solid var(--sand);border-radius:5px;font-size:10.5px;
+  padding:3px 6px;color:var(--ink-soft);background:#fff}
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.res img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--sand);display:block}
+.credits{margin-top:14px;font-size:11.5px;line-height:1.5;color:var(--ink-soft)}
+
 footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
   border-top:1px solid var(--sand);margin-top:26px}
 
@@ -195,6 +228,11 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
 <div class="sheet" id="cartSheet">
   <div class="veil" data-close></div>
   <div class="panel"><h3 id="cartTitle"></h3><div id="cartBody"></div></div>
+</div>
+
+<div class="sheet" id="admSheet">
+  <div class="veil" data-close></div>
+  <div class="panel"><h3 id="admTitle">Photos</h3><div id="admBody"></div></div>
 </div>
 
 <script>
@@ -524,8 +562,16 @@ function setLang(l){
   $('#demo').textContent   = CONFIG.demo ? t('demo') : '';
   $('#demo').style.display = CONFIG.demo ? '' : 'none';
   $('#sub').textContent  = CONFIG.city + ' · ' + CONFIG.tagline;
-  $('#foot').textContent = CONFIG.name + ' · ' + CONFIG.address;
+  renderFoot();
   renderChips(); renderMenu(); renderBar(); renderLangGrid();
+}
+
+/* Crédit photographes : exigé par les conditions d'utilisation de Pexels
+   dès qu'une photo provient de leur banque. */
+function renderFoot(){
+  const names = [...new Set(photoDishes().map(d => creditOf(d.id)).filter(Boolean))];
+  $('#foot').innerHTML = `${CONFIG.name} · ${CONFIG.address}` +
+    (names.length ? `<div class="credits">Photos : ${names.join(', ')} — Pexels</div>` : '');
 }
 
 function renderLangGrid(){
@@ -554,7 +600,8 @@ function marketLine(d){
 function dishHTML(d, withPic){
   const qty = cart[d.id] || 0;
   const thumb = withPic
-    ? `<span class="thumb">${d.p ? `<img src="${d.p}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`
+    ? (()=>{ const u = photoOf(d);
+        return `<span class="thumb">${u ? `<img src="${u}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`; })()
     : '';
   const controls = d.v
     ? `<div class="vars">${d.v.map(([k,pr]) => {
@@ -690,7 +737,8 @@ document.addEventListener('click', e => {
     }
     if(el.dataset.lang){ setLang(el.dataset.lang); $('#langSheet').classList.remove('on'); return; }
     if(el.hasAttribute('data-close')){
-      $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on'); return;
+      $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on');
+      $('#admSheet').classList.remove('on'); return;
     }
   }
   if(e.target.id === 'send'){
@@ -701,7 +749,274 @@ document.addEventListener('click', e => {
 $('#globe').onclick = () => $('#langSheet').classList.add('on');
 $('#barGo').onclick = () => { renderCart(); $('#cartSheet').classList.add('on'); };
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape'){ $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on'); }
+  if(e.key === 'Escape'){ $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on');
+    $('#admSheet').classList.remove('on'); }
+});
+
+/* ============================================================
+   5. PHOTOS — administration
+   ------------------------------------------------------------
+   Accès : appui long (1 s) sur le titre « Casa García », puis code PIN.
+   La clé Pexels reste sur l'appareil, jamais dans le dépôt.
+   Les photos choisies sont stockées localement, puis exportées en JSON
+   pour être gravées définitivement dans PHOTOS ci-dessous.
+   ============================================================ */
+const PIN_HASH = 'c27930584abbf709a1858e7e75ec8e0e579cffd2d56c36142f15190a4df3a4c2';
+
+/* Photos gravées. Vide pour l'instant : à remplir depuis l'export JSON. */
+const PHOTOS = {};
+
+/* Requêtes Pexels par plat. En anglais et en espagnol : le français ne
+   donne presque rien. Modifiables ici si un résultat tombe à côté. */
+const PEXQ = {
+ e1:'roasted red pepper salad', e2:'mixed green salad plate', e3:'potato salad mayonnaise bowl',
+ e4:'boquerones anchovies vinegar', e5:'jamon serrano plate', e6:'manchego cheese wedges',
+ e7:'clams white wine garlic', e8:'seafood salad plate', e9:'croquetas spanish tapas',
+ e10:'baby eels dish', e11:'king prawns plate', e12:'cooked lobster plate',
+ e13:'spiny lobster seafood', e14:'crab seafood platter', e15:'red prawns carabineros',
+ e16:'langoustine seafood',
+ p1:'fish soup bowl', p2:'seafood spaghetti pasta', p3:'seafood paella pan',
+ p4:'tortilla espanola potato omelette', p5:'tuna omelette', p6:'ham omelette',
+ p7:'cheese omelette', p8:'grilled prawns plancha', p9:'gambas al ajillo garlic prawns',
+ p10:'prawn omelette', p11:'calamares fritos squid rings', p12:'fried white fish plate',
+ p13:'grilled sole fish', p14:'red mullet fish grilled', p15:'fried fresh anchovies',
+ p16:'grilled swordfish steak', p17:'baby squid chipirones', p18:'grilled sardines',
+ p19:'beef steak plate', p20:'beef tomato sauce dish', p21:'kefta tagine meatballs',
+ s1:'fish stew pot', s2:'fideua noodle paella', s3:'arroz negro squid ink rice',
+ s4:'lobster rice dish', s5:'seafood platter sharing',
+ ds1:'creme caramel flan dessert', ds2:'vanilla custard dessert', ds3:'lemon tart slice',
+ ds4:'chocolate mousse dessert', ds5:'fresh fruit plate dessert', ds6:'ice cream scoops bowl',
+ ds7:'biscuit pudding dessert'
+};
+
+/* ---------- stockage local, tolérant aux navigateurs verrouillés ---------- */
+const LS = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }
+             catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+             catch { return false; } },
+  raw(k, d){ try { return localStorage.getItem(k) || d; } catch { return d; } },
+  rawSet(k, v){ try { localStorage.setItem(k, v); } catch {} }
+};
+let live = LS.get('cg_photos', {});          // { id: {u:url, c:'photographe'} }
+
+/* Ordre de résolution : édition locale → photo gravée → fichier dans photos/ */
+function photoOf(d){
+  const l = live[d.id];   if (l && l.u) return l.u;
+  const b = PHOTOS[d.id]; if (b && b.u)  return b.u;
+  return d.p || null;
+}
+function creditOf(id){
+  const l = live[id]; if (l && l.c) return l.c;
+  const b = PHOTOS[id]; if (b && b.c) return b.c;
+  return null;
+}
+const photoDishes = () => allDishes().filter(d => d.p);
+
+/* ---------- appui long sur le titre ---------- */
+(function(){
+  const el = document.querySelector('.wall h1');
+  let timer = null;
+  const start = () => { timer = setTimeout(openPin, 1000); };
+  const stop  = () => { clearTimeout(timer); };
+  ['pointerdown'].forEach(e => el.addEventListener(e, start));
+  ['pointerup','pointerleave','pointercancel','pointermove'].forEach(e => el.addEventListener(e, stop));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+})();
+
+/* ---------- pavé numérique ---------- */
+let pin = '';
+async function sha256(txt){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function openPin(){
+  pin = '';
+  $('#admTitle').textContent = 'Photos';
+  $('#admBody').innerHTML = `
+    <div class="pinwrap">
+      <div class="dots" id="dots"></div>
+      <div class="pad">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="key" data-k="${n}">${n}</button>`).join('')}
+        <button class="key alt" data-k="del">effacer</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key alt" data-k="ok">valider</button>
+      </div>
+      <div class="pinerr" id="pinerr"></div>
+    </div>
+    <button class="close" data-close>Fermer</button>`;
+  drawDots();
+  $('#admSheet').classList.add('on');
+}
+function drawDots(){
+  $('#dots').innerHTML = [0,1,2,3,4,5].map(i=>`<span class="dot ${i<pin.length?'on':''}"></span>`).join('');
+}
+async function pinKey(k){
+  if (k === 'del'){ pin = pin.slice(0,-1); drawDots(); return; }
+  if (k === 'ok'){
+    if (await sha256(pin) === PIN_HASH) return openAdmin();
+    $('#pinerr').textContent = 'Code incorrect';
+    pin = ''; drawDots(); return;
+  }
+  if (pin.length < 6){ pin += k; drawDots(); if (pin.length === 6) pinKey('ok'); }
+}
+
+/* ---------- écran d'administration ---------- */
+function openAdmin(){
+  $('#admTitle').textContent = 'Photos des plats';
+  const key = LS.raw('cg_pexkey','');
+  const n   = photoDishes().length;
+  const got = photoDishes().filter(d => photoOf(d) && photoOf(d) !== d.p).length;
+  $('#admBody').innerHTML = `
+    <label for="pk">Clé API Pexels <span class="lc">(reste sur cet appareil)</span></label>
+    <input id="pk" type="password" value="${key}" placeholder="Colle ta clé ici" autocomplete="off">
+    <div class="adm-bar">
+      <button class="solid" id="fill">Remplir les manquantes</button>
+      <button id="expo">Exporter</button>
+      <button class="warn" id="wipe">Tout retirer</button>
+    </div>
+    <div class="adm-log" id="log">${got} / ${n} plats illustrés</div>
+    <div class="adm-grid">
+      ${photoDishes().map(d => {
+        const u = photoOf(d) === d.p ? null : photoOf(d);
+        return `<div class="adm-cell">
+          <button class="sq ${u?'':'none'}" data-pick="${d.id}">
+            ${u ? `<img src="${u}" alt="" onerror="this.remove()">` : ''}</button>
+          <b>${d.n.fr}</b>
+          <div class="mini">
+            <button data-pick="${d.id}">chercher</button>
+            <button data-cam="${d.id}">appareil</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="camIn" hidden>
+    <button class="close" data-close>Fermer</button>`;
+  $('#pk').addEventListener('change', e => LS.rawSet('cg_pexkey', e.target.value.trim()));
+}
+
+const pexKey = () => LS.raw('cg_pexkey','').trim();
+async function pexSearch(query, n){
+  if (!pexKey()) throw new Error('clé Pexels manquante');
+  const url = 'https://api.pexels.com/v1/search?query=' + encodeURIComponent(query)
+            + '&per_page=' + n + '&orientation=square';
+  const r = await fetch(url, { headers: { Authorization: pexKey() } });
+  if (r.status === 429) throw new Error('quota Pexels atteint, réessaie dans une heure');
+  if (!r.ok) throw new Error('Pexels a répondu ' + r.status);
+  return (await r.json()).photos || [];
+}
+const squareUrl = src => src.split('?')[0] + '?auto=compress&cs=tinysrgb&fit=crop&w=800&h=800';
+
+async function fillAll(){
+  const todo = photoDishes().filter(d => !live[d.id] && !PHOTOS[d.id]);
+  if (!todo.length){ $('#log').textContent = 'Rien à remplir.'; return; }
+  for (let i = 0; i < todo.length; i++){
+    const d = todo[i];
+    $('#log').textContent = `Recherche ${i+1} / ${todo.length} — ${d.n.fr}`;
+    try {
+      const ph = await pexSearch(PEXQ[d.id] || d.n.en, 1);
+      if (ph.length){
+        live[d.id] = { u: squareUrl(ph[0].src.large2x || ph[0].src.large), c: ph[0].photographer };
+        LS.set('cg_photos', live);
+      }
+    } catch(e){ $('#log').textContent = e.message; break; }
+    await new Promise(r => setTimeout(r, 350));
+  }
+  renderMenu(); openAdmin();
+}
+
+let pickId = null;
+async function openPicker(id){
+  pickId = id;
+  const d = findDish(id);
+  $('#admTitle').textContent = d.n.fr;
+  $('#admBody').innerHTML = `
+    <label for="q">Mots-clés</label>
+    <input id="q" value="${PEXQ[id] || ''}" autocomplete="off">
+    <div class="adm-bar"><button class="solid" id="go">Chercher</button>
+      <button id="back">Retour</button></div>
+    <div class="adm-log" id="log"></div>
+    <div class="res" id="res"></div>`;
+  runPick();
+}
+async function runPick(){
+  const q = $('#q').value.trim();
+  $('#log').textContent = 'Recherche…';
+  try {
+    const ph = await pexSearch(q, 9);
+    $('#log').textContent = ph.length ? '' : 'Aucun résultat. Essaie des mots plus simples.';
+    $('#res').innerHTML = ph.map((p,i) =>
+      `<img src="${squareUrl(p.src.medium || p.src.large)}" data-take="${i}" alt="">`).join('');
+    $('#res').dataset.pool = JSON.stringify(ph.map(p => ({
+      u: squareUrl(p.src.large2x || p.src.large), c: p.photographer })));
+  } catch(e){ $('#log').textContent = e.message; }
+}
+
+/* photo prise avec l'appareil, compressée avant stockage */
+function shrink(file, cb){
+  const img = new Image();
+  img.onload = () => {
+    const S = 700, c = document.createElement('canvas');
+    c.width = c.height = S;
+    const k = Math.min(img.width, img.height);
+    c.getContext('2d').drawImage(img, (img.width-k)/2, (img.height-k)/2, k, k, 0, 0, S, S);
+    cb(c.toDataURL('image/jpeg', 0.72));
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+function exportJSON(){
+  const out = {};
+  for (const d of photoDishes()){
+    const src = live[d.id] || PHOTOS[d.id];
+    if (src) out[d.id] = src;
+  }
+  const txt = JSON.stringify(out, null, 1);
+  $('#admTitle').textContent = 'Export';
+  $('#admBody').innerHTML = `
+    <div class="adm-log">${Object.keys(out).length} photos. Envoie ce texte pour gravure définitive.</div>
+    <textarea id="ex" style="min-height:220px;font-family:var(--mono);font-size:11px">${txt}</textarea>
+    <div class="adm-bar"><button class="solid" id="copy">Copier</button>
+      <button id="back">Retour</button></div>`;
+}
+
+/* ---------- interactions de l'administration ---------- */
+document.addEventListener('click', async e => {
+  const k = e.target.closest('[data-k]');       if (k) return pinKey(k.dataset.k);
+  const pk = e.target.closest('[data-pick]');   if (pk) return openPicker(pk.dataset.pick);
+  const tk = e.target.closest('[data-take]');
+  if (tk){
+    const pool = JSON.parse($('#res').dataset.pool || '[]');
+    live[pickId] = pool[+tk.dataset.take];
+    LS.set('cg_photos', live);
+    renderMenu(); openAdmin(); return;
+  }
+  const cm = e.target.closest('[data-cam]');
+  if (cm){
+    const inp = $('#camIn'); pickId = cm.dataset.cam;
+    inp.onchange = () => {
+      const f = inp.files[0]; if (!f) return;
+      shrink(f, uri => {
+        live[pickId] = { u: uri, c: null };
+        if (!LS.set('cg_photos', live)) alert('Mémoire de l\'appareil pleine. Retire des photos avant d\'en ajouter.');
+        renderMenu(); openAdmin();
+      });
+    };
+    inp.click(); return;
+  }
+  if (e.target.id === 'fill') return fillAll();
+  if (e.target.id === 'go')   return runPick();
+  if (e.target.id === 'back') return openAdmin();
+  if (e.target.id === 'expo') return exportJSON();
+  if (e.target.id === 'copy'){
+    try { await navigator.clipboard.writeText($('#ex').value); e.target.textContent = 'Copié'; }
+    catch { $('#ex').select(); }
+    return;
+  }
+  if (e.target.id === 'wipe'){
+    if (!confirm('Retirer toutes les photos choisies sur cet appareil ?')) return;
+    live = {}; LS.set('cg_photos', live); renderMenu(); openAdmin();
+  }
 });
 
 setLang(CONFIG.default);
