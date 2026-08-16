@@ -15,10 +15,10 @@
    Le produit espagnol reste, la préparation se traduit.
    ============================================================ */
 :root{
-  --chaux:#F2F0EB; --chaux-2:#E7E4DC;
+  --chaux:#FFFFFF; --chaux-2:#F0F3F6;
   --cobalt:#14428C; --cobalt-deep:#0B2A5B;
-  --ink:#16202E;    --ink-soft:#5C6675;
-  --ochre:#C88A2E;  --sand:#D6D0C4;
+  --ink:#101B27;    --ink-soft:#5A6675;
+  --ochre:#B4512C;  --sand:#D3DBE3;
   --display:'Bricolage Grotesque',system-ui,sans-serif;
   --body:'Karla',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
@@ -31,7 +31,7 @@ body{background:var(--chaux);color:var(--ink);font-family:var(--body);font-size:
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 :focus-visible{outline:2px solid var(--ochre);outline-offset:3px}
 
-.demo{background:var(--ochre);color:#231703;font-size:12.5px;padding:7px var(--pad);text-align:center}
+.demo{background:var(--ochre);color:#fff;font-size:12.5px;padding:7px var(--pad);text-align:center}
 
 .wall{background:var(--cobalt-deep);color:var(--chaux);padding:18px var(--pad) 0}
 .wall-top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
@@ -47,7 +47,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .wall .sub{font-size:13px;letter-spacing:.16em;text-transform:uppercase;opacity:.72;
   margin-top:12px;padding-bottom:26px}
 .azulejo{height:24px;background-repeat:repeat-x;background-size:24px 24px;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%230B2A5B'/%3E%3Cpath d='M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z' fill='none' stroke='%23F2F0EB' stroke-width='1.3'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23C88A2E'/%3E%3C/svg%3E")}
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%230B2A5B'/%3E%3Cpath d='M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z' fill='none' stroke='%23FFFFFF' stroke-width='1.3'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23B4512C'/%3E%3C/svg%3E")}
 
 .globe{border:1px solid rgba(242,240,235,.35);border-radius:999px;padding:7px 14px;
   font-size:13px;color:var(--chaux);display:flex;gap:7px;align-items:center}
@@ -78,7 +78,7 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
 .dish:last-child{border-bottom:0}
 .thumb{width:62px;height:62px;flex:none;border-radius:9px;overflow:hidden;position:relative;
   border:1px solid var(--sand);background-repeat:repeat;background-size:21px 21px;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='21' height='21'%3E%3Crect width='21' height='21' fill='%23EFECE5'/%3E%3Cpath d='M10.5 2 L19 10.5 L10.5 19 L2 10.5 Z' fill='none' stroke='%23D6D0C4' stroke-width='1'/%3E%3C/svg%3E")}
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='21' height='21'%3E%3Crect width='21' height='21' fill='%23F7F9FB'/%3E%3Cpath d='M10.5 2 L19 10.5 L10.5 19 L2 10.5 Z' fill='none' stroke='%23D3DBE3' stroke-width='1'/%3E%3C/svg%3E")}
 .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .dish .body{flex:1;min-width:0}
 .line{display:flex;align-items:baseline;gap:8px}
@@ -97,7 +97,7 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
   font-size:21px;line-height:1;display:flex;align-items:center;justify-content:center;
   transition:background .15s,color .15s,transform .15s}
 .plus:hover{background:var(--cobalt);color:var(--chaux)}
-.plus.hit{background:var(--ochre);border-color:var(--ochre);color:#231703;transform:scale(.88)}
+.plus.hit{background:var(--ochre);border-color:var(--ochre);color:#fff;transform:scale(.88)}
 .stepper{flex:none;display:flex;align-items:center;border:1.5px solid var(--cobalt);
   border-radius:999px;padding:2px}
 .stepper button{width:31px;height:31px;border-radius:50%;color:var(--cobalt);font-size:19px;
@@ -125,7 +125,7 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
 .bar.on{transform:none}
 .bar .count{font-size:13.5px;opacity:.75}
 .bar .sum{font-family:var(--mono);font-size:18px}
-.bar .go{background:var(--ochre);color:#231703;font-weight:600;border-radius:8px;
+.bar .go{background:var(--ochre);color:#fff;font-weight:600;border-radius:8px;
   padding:11px 18px;font-size:15px;margin-inline-start:auto}
 
 .sheet{position:fixed;inset:0;z-index:50;display:none}
@@ -173,14 +173,15 @@ textarea{min-height:74px;resize:vertical}
 .tbl-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--sand);
   background:#fff;border-radius:8px;padding:6px 8px 6px 12px;font-size:14px}
 .tbl-chip b{font-family:var(--mono);font-weight:500}
-.tbl-chip button{width:24px;height:24px;border-radius:50%;font-size:13px;line-height:1;
-  display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
+.tbl-chip button{width:28px;height:28px;border-radius:50%;font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center;color:var(--cobalt);
+  border:1px solid var(--sand);background:#fff}
 .tbl-chip button:hover{background:var(--chaux-2)}
 .tbl-chip button.del{color:#B3261E}
 .tbl-add{display:flex;gap:8px}
 .tbl-add input{flex:1}
-.tbl-add button{flex:none;border:1.5px solid var(--cobalt);color:var(--cobalt);
-  border-radius:8px;padding:0 16px}
+.tbl-add button{flex:none;min-height:44px;border:1.5px solid var(--cobalt);
+  background:var(--cobalt);color:#fff;border-radius:10px;padding:0 18px;font-weight:600}
 .fmt{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
 .fmt button{border:1.5px solid var(--sand);border-radius:11px;padding:16px 12px;text-align:start}
 .fmt button:hover{border-color:var(--cobalt)}
@@ -190,7 +191,9 @@ textarea{min-height:74px;resize:vertical}
 .send{width:100%;margin-top:20px;background:#25D366;color:#04310f;font-weight:600;
   border-radius:10px;padding:15px;font-size:16.5px}
 .hint{font-size:13px;color:var(--ink-soft);margin-top:10px;text-align:center}
-.close{width:100%;margin-top:12px;padding:12px;color:var(--ink-soft);font-size:14.5px}
+.close{width:100%;margin-top:14px;padding:13px;border:1px solid var(--sand);border-radius:11px;
+  background:#fff;color:var(--ink-soft);font-size:14.5px}
+.close:hover{border-color:var(--ink-soft)}
 .empty{text-align:center;color:var(--ink-soft);padding:34px 0}
 
 /* ---------- administration photos ---------- */
@@ -206,11 +209,18 @@ textarea{min-height:74px;resize:vertical}
 .key.ok{background:var(--cobalt);color:var(--chaux);border-color:var(--cobalt)}
 .pinerr{text-align:center;color:#B3261E;font-size:13.5px;min-height:20px;margin-top:12px}
 
-.adm-bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
-.adm-bar button{border:1.5px solid var(--cobalt);color:var(--cobalt);border-radius:8px;
-  padding:9px 13px;font-size:13.5px}
-.adm-bar button.solid{background:var(--cobalt);color:var(--chaux)}
-.adm-bar button.warn{border-color:#B3261E;color:#B3261E}
+.adm-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:16px 0}
+.adm-bar button{display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;padding:10px 12px;border:1.5px solid var(--sand);border-radius:11px;
+  background:#fff;color:var(--cobalt-deep);font-size:14px;font-weight:600;line-height:1.25;
+  transition:border-color .15s,background .15s,color .15s}
+.adm-bar button:hover{border-color:var(--cobalt)}
+.adm-bar button i{font-style:normal;font-size:16px;line-height:1;opacity:.85}
+.adm-bar button.solid{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.adm-bar button.solid:hover{background:var(--cobalt-deep);border-color:var(--cobalt-deep)}
+.adm-bar button.warn{border-color:#EBD3D0;color:#B3261E}
+.adm-bar button.warn:hover{border-color:#B3261E}
+.adm-bar button.wide{grid-column:1 / -1}
 .adm-log{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);min-height:20px;margin-bottom:10px}
 .adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .adm-cell{text-align:center;display:flex;flex-direction:column}
@@ -251,7 +261,7 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
   justify-content:space-between;padding:14mm 10mm;text-align:center}
 .qcard.half{height:105mm;padding:7mm 10mm;justify-content:space-between}
 .qband{align-self:stretch;height:7mm;background-repeat:repeat-x;background-size:7mm 7mm;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%230B2A5B'/%3E%3Cpath d='M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z' fill='none' stroke='%23F2F0EB' stroke-width='1.3'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23C88A2E'/%3E%3C/svg%3E")}
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%230B2A5B'/%3E%3Cpath d='M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z' fill='none' stroke='%23FFFFFF' stroke-width='1.3'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23B4512C'/%3E%3C/svg%3E")}
 .qname{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.02em;
   color:var(--cobalt-deep);line-height:1}
 .qcard.half .qname{font-size:26px}
@@ -875,7 +885,7 @@ document.addEventListener('keydown', e => {
 --------------------------------------------------------------------------- */
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: 'casa-garcia'
 };
 
@@ -926,6 +936,18 @@ const setting = k => {
   return (REMOTE && REMOTE[remoteKey]) ?? localSet[k] ?? SETTINGS[k] ?? CONFIG[k];
 };
 const waNumber  = () => String(setting('whatsapp')).replace(/\D/g, '');
+
+/* Le patron saisit son numéro comme il le dit : 0679323232.
+   WhatsApp exige l'indicatif pays : on convertit dans les deux sens. */
+const toLocal = intl => {
+  const d = String(intl).replace(/\D/g, '');
+  return d.startsWith('212') ? '0' + d.slice(3) : d;
+};
+const toIntl = loc => {
+  const d = String(loc).replace(/\D/g, '');
+  if (d.startsWith('212')) return d;
+  return '212' + (d.startsWith('0') ? d.slice(1) : d);
+};
 const orderLang = () => setting('orderLang');
 
 /* Requêtes Pexels par plat. En anglais et en espagnol : le français ne
@@ -1089,8 +1111,9 @@ function gearPanel(msg){
   $('#admBody').innerHTML = `
     ${msg ? `<div class="adm-log">${msg}</div>` : ''}
     <label for="wa">Numéro WhatsApp du restaurant
-      <span class="lc">(format international, sans + ni espaces)</span></label>
-    <input id="wa" inputmode="numeric" value="${waNumber()}" placeholder="212661234567" autocomplete="off">
+      <span class="lc">(comme sur votre téléphone : 0679323232)</span></label>
+    <input id="wa" inputmode="numeric" maxlength="10" value="${toLocal(waNumber())}"
+           placeholder="0679323232" autocomplete="off">
 
     <label for="ol">Langue reçue par la cuisine</label>
     <select id="ol">
@@ -1099,8 +1122,8 @@ function gearPanel(msg){
     </select>
 
     <div class="adm-bar">
-      <button class="solid" id="gsave">Enregistrer</button>
-      <button id="gcode">Changer mon code</button>
+      <button class="solid" id="gsave"><i>✓</i>Enregistrer</button>
+      <button id="gcode"><i>🔑</i>Changer mon code</button>
     </div>
     <div class="adm-log" id="glog"></div>
 
@@ -1117,15 +1140,19 @@ function gearPanel(msg){
       <button id="tadd">Ajouter</button>
     </div>
     <div class="adm-bar">
-      <button class="solid" id="qrall">Imprimer toutes les tables</button>
+      <button class="solid wide" id="qrall"><i>🖨</i>Imprimer toutes les tables</button>
     </div>
     <div class="adm-log" id="tlog"></div>
     <button class="close" data-close>Fermer</button>`;
 }
 
 async function gearSave(){
-  const num = ($('#wa').value || '').replace(/\D/g, '');
-  if (num.length < 8){ $('#glog').textContent = 'Numéro trop court, non enregistré.'; return; }
+  const loc = ($('#wa').value || '').replace(/\D/g, '');
+  if (!/^0\d{9}$/.test(loc)){
+    $('#glog').textContent = 'Numéro invalide. Dix chiffres commençant par 0, par exemple 0679323232.';
+    return;
+  }
+  const num = toIntl(loc);
   $('#glog').textContent = 'Enregistrement…';
   try {
     const ok = await rpc('resto_update', {
@@ -1182,7 +1209,7 @@ function askFormat(list){
       <button data-fmt="flat"><b>Carte posée</b>
         <span>A5 pleine page. À poser à plat ou à glisser dans un porte-menu.</span></button>
     </div>
-    <div class="adm-bar"><button id="fback">Retour aux paramètres</button></div>`;
+    <div class="adm-bar"><button class="wide" id="fback"><i>←</i>Retour aux paramètres</button></div>`;
   printQueue = list;
 }
 let printQueue = [];
@@ -1297,11 +1324,11 @@ function openAdmin(msg){
       ? 'Sert uniquement à chercher de nouvelles photos. Les photos déjà publiées s\'affichent sans elle.'
       : 'Sans clé, la recherche de photos est indisponible. Les photos déjà publiées restent visibles par les clients. Clé gratuite sur pexels.com/api'}</div>
     <div class="adm-bar">
-      <button class="solid" id="fill">Remplir les manquantes</button>
-      <button class="${admFilter==='dupes'?'solid':''}" id="dupes">Doublons${dup.size?' ('+dup.size+')':''}</button>
-      <button id="expo">Télécharger photos.json</button>
-      <button id="acode">Changer mon code</button>
-      <button class="warn" id="wipe">Tout retirer</button>
+      <button class="solid" id="fill"><i>✨</i>Remplir les manquantes</button>
+      <button class="${admFilter==='dupes'?'solid':''}" id="dupes"><i>⧉</i>Doublons${dup.size?' ('+dup.size+')':''}</button>
+      <button id="expo"><i>⬇</i>Télécharger photos.json</button>
+      <button id="acode"><i>🔑</i>Changer mon code</button>
+      <button class="warn" id="wipe"><i>🗑</i>Tout retirer</button>
     </div>
     <div class="adm-log" id="log">${admFilter==='dupes'
        ? (list.length ? list.length+' plats partagent une photo' : 'Aucun doublon')
@@ -1363,8 +1390,8 @@ async function openPicker(id){
   $('#admBody').innerHTML = `
     <label for="q">Mots-clés</label>
     <input id="q" value="${PEXQ[id] || ''}" autocomplete="off">
-    <div class="adm-bar"><button class="solid" id="go">Chercher</button>
-      <button id="back">Retour</button></div>
+    <div class="adm-bar"><button class="solid" id="go"><i>🔍</i>Chercher</button>
+      <button id="back"><i>←</i>Retour</button></div>
     <div class="adm-log" id="log"></div>
     <div class="res" id="res"></div>`;
   runPick();
@@ -1422,7 +1449,7 @@ function exportJSON(){
     </ol>
     <div class="adm-log">Pour voir ce que voient les clients, ouvre le site
       en navigation privée : tes choix locaux n'y apparaissent pas.</div>
-    <div class="adm-bar"><button class="solid" id="back">Retour</button></div>`;
+    <div class="adm-bar"><button class="solid wide" id="back"><i>←</i>Retour</button></div>`;
 }
 
 /* ---------- interactions de l'administration ---------- */
