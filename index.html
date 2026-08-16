@@ -36,8 +36,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .wall{background:var(--cobalt-deep);color:var(--chaux);padding:18px var(--pad) 0}
 .wall-top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
 .lock{border:1px solid rgba(242,240,235,.35);border-radius:999px;width:34px;height:34px;
-  font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;
-  margin-inline-end:auto}
+  font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center}
+#gear{margin-inline-end:0}
+#lock{margin-inline-end:auto}
 .lock:hover,.lock:focus-visible{background:rgba(242,240,235,.1)}
 .wall h1{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   font-family:var(--display);font-weight:800;line-height:.92;
@@ -171,6 +172,16 @@ textarea{min-height:74px;resize:vertical}
 .empty{text-align:center;color:var(--ink-soft);padding:34px 0}
 
 /* ---------- administration photos ---------- */
+.pinwrap{max-width:280px;margin:0 auto}
+.pinsub{text-align:center;font-size:14px;color:var(--ink-soft);margin-bottom:4px}
+.dots{display:flex;gap:12px;justify-content:center;margin:18px 0 22px}
+.dot{width:13px;height:13px;border-radius:50%;background:var(--sand);transition:background .12s}
+.dot.on{background:var(--cobalt)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.key{background:#fff;border:1px solid var(--sand);border-radius:12px;padding:17px 0;
+  font-family:var(--mono);font-size:22px;color:var(--cobalt-deep)}
+.key:active{background:var(--cobalt);color:var(--chaux)}
+.key.ok{background:var(--cobalt);color:var(--chaux);border-color:var(--cobalt)}
 .pinerr{text-align:center;color:#B3261E;font-size:13.5px;min-height:20px;margin-top:12px}
 
 .adm-bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
@@ -179,7 +190,6 @@ textarea{min-height:74px;resize:vertical}
 .adm-bar button.solid{background:var(--cobalt);color:var(--chaux)}
 .adm-bar button.warn{border-color:#B3261E;color:#B3261E}
 .adm-log{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);min-height:20px;margin-bottom:10px}
-.linkish{font-family:var(--mono);font-size:12.5px;color:var(--cobalt);text-decoration:underline}
 .adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .adm-cell{text-align:center;display:flex;flex-direction:column}
 .adm-cell .sq{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--sand);
@@ -213,7 +223,8 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
 
 <header class="wall">
   <div class="wall-top">
-    <button class="lock" id="lock" aria-label="Gestion des photos">🔒</button>
+    <button class="lock" id="gear" aria-label="Paramètres">⚙️</button>
+    <button class="lock" id="lock" aria-label="Photos">🔒</button>
     <button class="globe" id="globe"><span class="fg" id="globeFlag">🇫🇷</span><span id="globeLbl">Français</span></button>
   </div>
   <h1>Casa <em>García</em></h1>
@@ -781,6 +792,7 @@ document.addEventListener('click', e => {
 
 $('#globe').onclick = () => $('#langSheet').classList.add('on');
 $('#lock').onclick  = () => openPin();
+$('#gear').onclick  = () => openGear();
 $('#barGo').onclick = () => { renderCart(); $('#cartSheet').classList.add('on'); };
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape'){ $('#langSheet').classList.remove('on'); $('#cartSheet').classList.remove('on');
@@ -795,7 +807,28 @@ document.addEventListener('keydown', e => {
    Les photos choisies sont stockées localement, puis exportées en JSON
    pour être gravées définitivement dans PHOTOS ci-dessous.
    ============================================================ */
-const PIN_HASH = 'c27930584abbf709a1858e7e75ec8e0e579cffd2d56c36142f15190a4df3a4c2';
+/* ---------------------------------------------------------------------------
+   Accès protégés — les codes vivent dans Supabase, jamais dans ce fichier.
+   ⚙️ engrenage : le patron, réglages du restaurant
+   🔒 cadenas   : Nour, photos de la carte
+--------------------------------------------------------------------------- */
+const SUPA = {
+  url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
+  resto: 'casa-garcia'
+};
+
+async function rpc(fn, args){
+  const r = await fetch(`${SUPA.url}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', apikey: SUPA.anon,
+               Authorization: 'Bearer ' + SUPA.anon },
+    body: JSON.stringify(args)
+  });
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(body?.message || 'Serveur injoignable');
+  return body;
+}
 
 /* Photos publiées. Chargées depuis photos.json à la racine du dépôt.
    Le fichier est produit par le bouton « Télécharger photos.json » de
@@ -803,6 +836,8 @@ const PIN_HASH = 'c27930584abbf709a1858e7e75ec8e0e579cffd2d56c36142f15190a4df3a4
    erreur : l'application fonctionne sans, avec les motifs d'attente. */
 let PHOTOS   = {};   // photos publiées, par identifiant de plat
 let SETTINGS = {};   // réglages publiés : numéro WhatsApp, langue de la cuisine
+
+let REMOTE = null;    // réglages Supabase ; null si la base est injoignable
 
 fetch('photos.json', { cache: 'no-store' })
   .then(r => r.ok ? r.json() : null)
@@ -815,11 +850,20 @@ fetch('photos.json', { cache: 'no-store' })
   })
   .catch(() => {});
 
+/* Supabase fait autorité. S'il ne répond pas — projet en pause, réseau coupé —
+   la carte continue de fonctionner avec les valeurs du fichier. */
+rpc('resto_get', { p_id: SUPA.resto })
+  .then(r => { REMOTE = r || null; })
+  .catch(() => { REMOTE = null; });
+
 /* Trois niveaux, du moins au plus prioritaire :
    valeur du fichier → réglages publiés → réglages locaux (pour tester
    avant publication). Ce dernier niveau ne concerne que cet appareil. */
 let localSet = {};
-const setting = k => (localSet[k] ?? SETTINGS[k] ?? CONFIG[k]);
+const setting = k => {
+  const remoteKey = k === 'orderLang' ? 'order_lang' : k;
+  return (REMOTE && REMOTE[remoteKey]) ?? localSet[k] ?? SETTINGS[k] ?? CONFIG[k];
+};
 const waNumber  = () => String(setting('whatsapp')).replace(/\D/g, '');
 const orderLang = () => setting('orderLang');
 
@@ -856,7 +900,7 @@ const LS = {
   rawSet(k, v){ try { localStorage.setItem(k, v); } catch {} }
 };
 let live = LS.get('cg_photos', {});
-localSet = LS.get('cg_settings', {});          // { id: {u:url, c:'photographe'} }
+localSet = LS.get('cg_settings', {});   // repli si Supabase est injoignable
 
 /* Ordre de résolution : édition locale → photo gravée → fichier dans photos/ */
 function photoOf(d){
@@ -877,23 +921,188 @@ async function sha256(txt){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
 }
-function openPin(){
-  $('#admTitle').textContent = 'Gestion des photos';
+/* Pavé numérique réutilisable, sur le modèle de MediReport.
+   opts : {title, subtitle, onDone(code), okLabel} */
+let padCode = '', padOpts = null;
+
+function openPad(opts){
+  padOpts = opts; padCode = '';
+  $('#admTitle').textContent = opts.title;
   $('#admBody').innerHTML = `
-    <div class="adm-log">Outil interne de gestion des illustrations de la carte.</div>
-    <label for="code">Code d'accès</label>
-    <input id="code" inputmode="numeric" autocomplete="off">
-    <div class="adm-bar"><button class="solid" id="unlock">Ouvrir</button></div>
-    <div class="pinerr" id="pinerr"></div>
+    <div class="pinwrap">
+      ${opts.subtitle ? `<div class="pinsub">${opts.subtitle}</div>` : ''}
+      <div class="dots" id="dots"></div>
+      <div class="pad">
+        ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="key" data-k="${n}">${n}</button>`).join('')}
+        <button class="key" data-k="del">⌫</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key ok" data-k="ok">✓</button>
+      </div>
+      <div class="pinerr" id="pinerr"></div>
+    </div>
     <button class="close" data-close>Fermer</button>`;
+  drawDots();
   $('#admSheet').classList.add('on');
-  setTimeout(() => $('#code')?.focus(), 60);
 }
-async function tryUnlock(){
-  const v = ($('#code')?.value || '').trim();
-  if (await sha256(v) === PIN_HASH) return openAdmin();
-  $('#pinerr').textContent = 'Code incorrect';
-  $('#code').value = '';
+function drawDots(){
+  const d = $('#dots');
+  if (d) d.innerHTML = [0,1,2,3,4,5]
+    .map(i => `<span class="dot ${i < padCode.length ? 'on' : ''}"></span>`).join('');
+}
+function padKey(k){
+  if (k === 'del'){ padCode = padCode.slice(0, -1); drawDots(); return; }
+  if (k === 'ok'){
+    if (padCode.length !== 6){ $('#pinerr').textContent = 'Six chiffres attendus'; return; }
+    const c = padCode; padCode = ''; drawDots();
+    $('#pinerr').textContent = '';
+    padOpts.onDone(c);
+    return;
+  }
+  if (padCode.length < 6){
+    padCode += k; drawDots();
+    if (padCode.length === 6) setTimeout(() => padKey('ok'), 130);
+  }
+}
+const padErr = m => { const e = $('#pinerr'); if (e) e.textContent = m; };
+
+/* ---------------------------------------------------------------------------
+   ⚙️  Patron — réglages du restaurant
+--------------------------------------------------------------------------- */
+let ownerCode = null;    // conservé en mémoire le temps de la session, jamais stocké
+
+async function openGear(){
+  $('#admTitle').textContent = 'Paramètres';
+  $('#admBody').innerHTML = '<div class="adm-log">Connexion…</div>';
+  $('#admSheet').classList.add('on');
+  try {
+    REMOTE = await rpc('resto_get', { p_id: SUPA.resto });
+  } catch {
+    $('#admBody').innerHTML = `
+      <div class="adm-log">Serveur injoignable. Les réglages ne peuvent pas être
+        modifiés pour le moment ; la carte continue de fonctionner normalement.</div>
+      <button class="close" data-close>Fermer</button>`;
+    return;
+  }
+  if (!REMOTE.owner_set) return firstRun();
+  openPad({
+    title: 'Paramètres',
+    subtitle: 'Code du restaurant',
+    onDone: async code => {
+      try {
+        if (await rpc('resto_check', { p_id: SUPA.resto, p_kind: 'owner', p_code: code })){
+          ownerCode = code; return gearPanel();
+        }
+        padErr('Code incorrect');
+      } catch(e){ padErr(e.message); }
+    }
+  });
+}
+
+/* Première mise en service : le patron choisit son code, saisi deux fois. */
+function firstRun(){
+  openPad({
+    title: 'Première mise en service',
+    subtitle: 'Choisissez un code à six chiffres',
+    onDone: first => openPad({
+      title: 'Première mise en service',
+      subtitle: 'Saisissez-le une seconde fois',
+      onDone: async second => {
+        if (first !== second){
+          padErr('Les deux codes diffèrent');
+          return setTimeout(firstRun, 900);
+        }
+        try {
+          await rpc('resto_set_code',
+            { p_id: SUPA.resto, p_kind: 'owner', p_old: null, p_new: second });
+          ownerCode = second;
+          REMOTE = await rpc('resto_get', { p_id: SUPA.resto });
+          gearPanel('Code enregistré.');
+        } catch(e){ padErr(e.message); }
+      }
+    })
+  });
+}
+
+function gearPanel(msg){
+  $('#admTitle').textContent = 'Paramètres';
+  $('#admBody').innerHTML = `
+    ${msg ? `<div class="adm-log">${msg}</div>` : ''}
+    <label for="wa">Numéro WhatsApp du restaurant
+      <span class="lc">(format international, sans + ni espaces)</span></label>
+    <input id="wa" inputmode="numeric" value="${waNumber()}" placeholder="212661234567" autocomplete="off">
+
+    <label for="ol">Langue reçue par la cuisine</label>
+    <select id="ol">
+      ${[['fr','Français'],['es','Español'],['en','English']].map(([v,n]) =>
+        `<option value="${v}" ${orderLang() === v ? 'selected' : ''}>${n}</option>`).join('')}
+    </select>
+
+    <div class="adm-bar">
+      <button class="solid" id="gsave">Enregistrer</button>
+      <button id="gcode">Changer mon code</button>
+    </div>
+    <div class="adm-log" id="glog"></div>
+    <button class="close" data-close>Fermer</button>`;
+}
+
+async function gearSave(){
+  const num = ($('#wa').value || '').replace(/\D/g, '');
+  if (num.length < 8){ $('#glog').textContent = 'Numéro trop court, non enregistré.'; return; }
+  $('#glog').textContent = 'Enregistrement…';
+  try {
+    const ok = await rpc('resto_update', {
+      p_id: SUPA.resto, p_code: ownerCode,
+      p_whatsapp: num, p_order_lang: $('#ol').value
+    });
+    if (!ok){ $('#glog').textContent = 'Session expirée, reprenez depuis le code.'; return; }
+    REMOTE = await rpc('resto_get', { p_id: SUPA.resto });
+    $('#glog').textContent = 'Enregistré. Les clients reçoivent le nouveau numéro immédiatement.';
+    renderCart();
+  } catch(e){ $('#glog').textContent = e.message; }
+}
+
+/* Changement de code, commun au patron et à l'administrateur. */
+function changeCode(kind, back){
+  openPad({
+    title: 'Nouveau code',
+    subtitle: 'Choisissez un code à six chiffres',
+    onDone: first => openPad({
+      title: 'Nouveau code',
+      subtitle: 'Saisissez-le une seconde fois',
+      onDone: async second => {
+        if (first !== second){ padErr('Les deux codes diffèrent'); return; }
+        try {
+          const old = kind === 'owner' ? ownerCode : adminCode;
+          const ok = await rpc('resto_set_code',
+            { p_id: SUPA.resto, p_kind: kind, p_old: old, p_new: second });
+          if (!ok){ padErr('Refusé, reprenez depuis le code actuel'); return; }
+          if (kind === 'owner') ownerCode = second; else adminCode = second;
+          back('Code modifié.');
+        } catch(e){ padErr(e.message); }
+      }
+    })
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   🔒  Administrateur — photos
+--------------------------------------------------------------------------- */
+let adminCode = null;
+
+function openPin(){
+  openPad({
+    title: 'Photos',
+    subtitle: 'Code administrateur',
+    onDone: async code => {
+      try {
+        if (await rpc('resto_check', { p_id: SUPA.resto, p_kind: 'admin', p_code: code })){
+          adminCode = code; return openAdmin();
+        }
+        padErr('Code incorrect');
+      } catch(e){ padErr(e.message); }
+    }
+  });
+  $('#admSheet').classList.add('on');
 }
 
 /* Deux plats illustrés par la même photo : Pexels renvoie souvent le même
@@ -910,7 +1119,7 @@ function duplicates(){
 let admFilter = 'all';
 
 /* ---------- écran d'administration ---------- */
-function openAdmin(){
+function openAdmin(msg){
   $('#admTitle').textContent = 'Photos des plats';
   const key = LS.raw('cg_pexkey','');
   const n   = photoDishes().length;
@@ -919,24 +1128,8 @@ function openAdmin(){
   const list = admFilter === 'dupes'
              ? photoDishes().filter(d => dup.has(photoOf(d)))
              : photoDishes();
-  const num = waNumber();
-  const src = localSet.whatsapp ? 'local, non publié'
-            : SETTINGS.whatsapp ? 'publié'
-            : 'valeur du fichier';
   $('#admBody').innerHTML = `
-    <label for="wa">Numéro WhatsApp du restaurant
-      <span class="lc">(format international, sans + ni espaces)</span></label>
-    <input id="wa" inputmode="numeric" value="${num}" placeholder="212661234567" autocomplete="off">
-    <div class="adm-log" id="setlog">Actuellement : ${src}${
-      localSet.whatsapp || localSet.orderLang
-        ? ' · <button class="linkish" id="reset">revenir aux valeurs publiées</button>' : ''}</div>
-
-    <label for="ol">Langue reçue par la cuisine</label>
-    <select id="ol">
-      ${[['fr','Français'],['es','Español'],['en','English']].map(([v,n]) =>
-        `<option value="${v}" ${orderLang()===v?'selected':''}>${n}</option>`).join('')}
-    </select>
-
+    ${msg ? `<div class="adm-log">${msg}</div>` : ''}
     <label for="pk">Clé API Pexels <span class="lc">(reste sur cet appareil)</span></label>
     <input id="pk" value="${key}" placeholder="Colle ta clé ici" autocomplete="off" spellcheck="false">
     <div class="adm-log">${key
@@ -946,6 +1139,7 @@ function openAdmin(){
       <button class="solid" id="fill">Remplir les manquantes</button>
       <button class="${admFilter==='dupes'?'solid':''}" id="dupes">Doublons${dup.size?' ('+dup.size+')':''}</button>
       <button id="expo">Télécharger photos.json</button>
+      <button id="acode">Changer mon code</button>
       <button class="warn" id="wipe">Tout retirer</button>
     </div>
     <div class="adm-log" id="log">${admFilter==='dupes'
@@ -968,20 +1162,6 @@ function openAdmin(){
     <input type="file" accept="image/*" capture="environment" id="camIn" hidden>
     <button class="close" data-close>Fermer</button>`;
   $('#pk').addEventListener('change', e => LS.rawSet('cg_pexkey', e.target.value.trim()));
-  $('#wa').addEventListener('change', e => {
-    const v = e.target.value.replace(/\D/g, '');
-    if (v.length < 8){
-      /* on ne remplace jamais un numéro valide par un numéro vide ou tronqué */
-      e.target.value = waNumber();
-      $('#setlog').textContent = 'Numéro trop court, non enregistré. Format : 212661234567';
-      return;
-    }
-    localSet.whatsapp = v; LS.set('cg_settings', localSet);
-    openAdmin();
-  });
-  $('#ol').addEventListener('change', e => {
-    localSet.orderLang = e.target.value; LS.set('cg_settings', localSet);
-  });
 }
 
 const pexKey = () => LS.raw('cg_pexkey','').trim();
@@ -1061,14 +1241,7 @@ function exportJSON(){
     if (src) out[d.id] = src;
   }
   const n = Object.keys(out).length;
-  if (waNumber().length < 8){
-    $('#log').textContent = 'Numéro WhatsApp invalide : publication annulée.';
-    return;
-  }
-  out._settings = {
-    whatsapp:  waNumber(),
-    orderLang: orderLang()
-  };
+  if (!n){ $('#log').textContent = 'Aucune photo à publier.'; return; }
 
   const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -1079,7 +1252,7 @@ function exportJSON(){
 
   $('#admTitle').textContent = 'Fichier téléchargé';
   $('#admBody').innerHTML = `
-    <div class="adm-log">photos.json · ${n} photos · WhatsApp ${out._settings.whatsapp}</div>
+    <div class="adm-log">photos.json · ${n} photos</div>
     <ol class="steps">
       <li>Ouvre <b>github.com/nmaidane/casa-garcia</b></li>
       <li><b>Add file → Upload files</b></li>
@@ -1093,7 +1266,11 @@ function exportJSON(){
 
 /* ---------- interactions de l'administration ---------- */
 document.addEventListener('click', async e => {
-  if (e.target.id === 'unlock') return tryUnlock();
+  const kk = e.target.closest('[data-k]');
+  if (kk) return padKey(kk.dataset.k);
+  if (e.target.id === 'gsave') return gearSave();
+  if (e.target.id === 'gcode') return changeCode('owner', gearPanel);
+  if (e.target.id === 'acode') return changeCode('admin', openAdmin);
   const pk = e.target.closest('[data-pick]');   if (pk) return openPicker(pk.dataset.pick);
   const tk = e.target.closest('[data-take]');
   if (tk){
@@ -1118,10 +1295,6 @@ document.addEventListener('click', async e => {
   if (e.target.id === 'fill') return fillAll();
   if (e.target.id === 'go')   return runPick();
   if (e.target.id === 'back') return openAdmin();
-  if (e.target.id === 'reset'){
-    localSet = {}; LS.set('cg_settings', localSet);
-    return openAdmin();
-  }
   if (e.target.id === 'dupes'){
     admFilter = admFilter === 'dupes' ? 'all' : 'dupes';
     return openAdmin();
