@@ -684,6 +684,45 @@ const UI = {
    et le client n'a pas à le saisir. Sans paramètre, le champ reste affiché. */
 const TABLE = (new URLSearchParams(location.search).get('t') || '').trim().slice(0, 20);
 
+/* ---------------------------------------------------------------------------
+   Sauvegarde du panier
+   ---------------------------------------------------------------------------
+   Android recharge une page mise en arrière-plan dès qu'il manque de mémoire :
+   sans cela, un client qui répond au téléphone pendant qu'il commande retrouve
+   un panier vide. On le garde trente minutes, le temps d'une interruption,
+   pas celui d'un service entier.
+   La clé porte le numéro de table : deux tables ne se mélangent jamais.
+   Le panier est effacé dès l'envoi de la commande — c'est le vrai signal de fin.
+--------------------------------------------------------------------------- */
+const CART_KEY = 'cg_cart:' + (TABLE || '-');
+const CART_TTL = 30 * 60 * 1000;
+
+function saveCart(){
+  try {
+    if (!Object.keys(cart).length) localStorage.removeItem(CART_KEY);
+    else localStorage.setItem(CART_KEY, JSON.stringify({ at: Date.now(), cart }));
+  } catch {}
+}
+function loadCart(){
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    if (!raw) return;
+    const v = JSON.parse(raw);
+    if (!v || !v.cart || Date.now() - v.at > CART_TTL){
+      localStorage.removeItem(CART_KEY);
+      return;
+    }
+    /* un plat coupé ou retiré de la carte entre-temps est simplement ignoré */
+    for (const [key, q] of Object.entries(v.cart)){
+      if (resolve(key) && q > 0) cart[key] = q;
+    }
+  } catch {}
+}
+function clearCart(){
+  cart = {};
+  try { localStorage.removeItem(CART_KEY); } catch {}
+}
+
 let lang = CONFIG.default;
 let activeCat = MENU[0].id;          // une seule catégorie affichée à la fois
 let cart = {};                       // { "id" ou "id|3/4" : quantité }
@@ -896,17 +935,20 @@ document.addEventListener('click', e => {
     if(el.dataset.add){
       const k = el.dataset.add;
       cart[k] = (cart[k]||0) + 1;
+      saveCart();
       el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'), 180);
       renderMenu(); renderBar(); return;
     }
-    if(el.dataset.inc){ cart[el.dataset.inc]++; renderCart(); renderBar(); renderMenu(); return; }
+    if(el.dataset.inc){ cart[el.dataset.inc]++; saveCart(); renderCart(); renderBar(); renderMenu(); return; }
     if(el.dataset.dec){
       const k = el.dataset.dec;
       if(--cart[k] <= 0) delete cart[k];
+      saveCart();
       renderCart(); renderBar(); renderMenu(); return;
     }
     if(el.dataset.del){
       delete cart[el.dataset.del];
+      saveCart();
       renderCart(); renderBar(); renderMenu(); return;
     }
     if(el.dataset.go){
@@ -922,7 +964,15 @@ document.addEventListener('click', e => {
   if(e.target.id === 'send'){
     const num = waNumber();
     if (num.length < 8){ alert('Numéro WhatsApp non configuré.'); return; }
-    window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(buildMessage()), '_blank');
+    const w = window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(buildMessage()), '_blank');
+    /* On ne vide le panier que si WhatsApp s'est bien ouvert : un navigateur
+       qui bloque la fenêtre ferait autrement perdre la commande au client.
+       Une fois partie, en revanche, on repart de zéro — sinon le dessert
+       commandé vingt minutes plus tard renverrait aussi le plat principal. */
+    if (w){
+      clearCart();
+      closeSheet(); renderMenu(); renderBar();
+    }
   }
 });
 
@@ -985,7 +1035,7 @@ document.addEventListener('keydown', e => {
 --------------------------------------------------------------------------- */
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: 'casa-garcia'
 };
 
@@ -1072,6 +1122,7 @@ function applyMenu(rows, source){
   try {
     MENU = buildMenu(rows);
     if (!MENU.some(c => c.id === activeCat)) activeCat = MENU[0].id;
+    loadCart();          // les plats du panier doivent exister dans la carte reçue
     renderChips(); renderMenu(); renderBar(); renderFoot();
   } catch (e) {
     console.warn('carte ' + source + ' inutilisable :', e.message);
@@ -2022,6 +2073,7 @@ const QR = (() => {
   return { svg, build };
 })();
 
+loadCart();
 setLang(CONFIG.default);
 
 /* Chargement de la carte, une fois tout le reste en place.
