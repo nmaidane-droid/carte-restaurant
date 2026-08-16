@@ -341,7 +341,7 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
     <button class="lock" id="lock" aria-label="Photos">🔒</button>
     <button class="globe" id="globe"><span class="fg" id="globeFlag">🇫🇷</span><span id="globeLbl">Français</span></button>
   </div>
-  <h1>Casa <em>García</em></h1>
+  <h1 id="brand">Casa <em>García</em></h1>
   <div class="sub" id="sub"></div>
 </header>
 <div class="azulejo"></div>
@@ -694,7 +694,7 @@ const TABLE = (new URLSearchParams(location.search).get('t') || '').trim().slice
    La clé porte le numéro de table : deux tables ne se mélangent jamais.
    Le panier est effacé dès l'envoi de la commande — c'est le vrai signal de fin.
 --------------------------------------------------------------------------- */
-const CART_KEY = 'cg_cart:' + (TABLE || '-');
+const CART_KEY = 'cg_cart:' + SUPA.resto + ':' + (TABLE || '-');
 const CART_TTL = 30 * 60 * 1000;
 
 function saveCart(){
@@ -730,7 +730,7 @@ const $ = s => document.querySelector(s);
 const t = k => UI[k][lang] || UI[k].fr;
 const nameOf = d => d.n[lang] || d.n.fr;
 const esOf   = d => d.n.es;
-const money  = n => n + ' ' + CONFIG.currency;
+const money  = n => n + ' ' + setting('currency');
 const groupsOf = c => c.groups;
 const allDishes = () => MENU.flatMap(c => c.groups.flatMap(g => g.dishes));
 const findDish  = id => allDishes().find(d => d.id === id);
@@ -759,7 +759,8 @@ function setLang(l){
   $('#langTitle').textContent = t('pick');
   $('#demo').textContent   = CONFIG.demo ? t('demo') : '';
   $('#demo').style.display = CONFIG.demo ? '' : 'none';
-  $('#sub').textContent  = CONFIG.city + ' · ' + CONFIG.tagline;
+  $('#brand').innerHTML  = brandHTML();
+  $('#sub').textContent  = [setting('city'), setting('tagline')].filter(Boolean).join(' · ');
   renderFoot();
   renderChips(); renderMenu(); renderBar(); renderLangGrid();
   /* le panier aussi : il peut être ouvert, ou rouvert plus tard
@@ -769,14 +770,28 @@ function setLang(l){
 
 /* Crédit photographes : exigé par les conditions d'utilisation de Pexels
    dès qu'une photo provient de leur banque. */
+/* Le premier mot du nom reste sombre, le reste passe en accent :
+   « Casa García », « Chez Hassan », « Riad Bougainvillier ». */
+function brandHTML(){
+  const n = String(setting('name') || CONFIG.name).trim();
+  const i = n.indexOf(' ');
+  return i < 0 ? esc(n)
+               : `${esc(n.slice(0, i))} <em>${esc(n.slice(i + 1))}</em>`;
+}
+
 function renderFoot(){
   const names = [...new Set(photoDishes().map(d => creditOf(d.id)).filter(Boolean))];
-  $('#foot').innerHTML = `${CONFIG.name} · ${CONFIG.address}` +
+  $('#foot').innerHTML = `${esc(setting('name') || CONFIG.name)} · ${esc(setting('city') || CONFIG.city)}` +
     (names.length ? `<div class="credits">Photos : ${names.join(', ')} — Pexels</div>` : '');
 }
 
+const activeLangs = () => {
+  const l = setting('langs');
+  return (Array.isArray(l) && l.length) ? l.filter(x => LANGS[x]) : CONFIG.langs;
+};
+
 function renderLangGrid(){
-  $('#langGrid').innerHTML = CONFIG.langs.map(l =>
+  $('#langGrid').innerHTML = activeLangs().map(l =>
     `<button class="lang ${l===lang?'on':''}" data-lang="${l}">
        <b>${LANGS[l].label}</b><span class="fg">${LANGS[l].flag}</span></button>`).join('');
 }
@@ -912,7 +927,7 @@ function buildMessage(){
   const who = ($('#who')?.value || '').trim();
   const nt  = ($('#nt')?.value  || '').trim();
 
-  let m = `*${CONFIG.name} — ${lbl.h}*\n`;
+  let m = `*${setting('name') || CONFIG.name} — ${lbl.h}*\n`;
   if(tbl) m += `${lbl.t} : ${tbl}\n`;
   if(who) m += `${lbl.n} : ${who}\n`;
   m += `${'—'.repeat(12)}\n`;
@@ -1033,10 +1048,28 @@ document.addEventListener('keydown', e => {
    ⚙️ engrenage : le patron, réglages du restaurant
    🔒 cadenas   : Nour, photos de la carte
 --------------------------------------------------------------------------- */
+/* Un seul dépôt sert tous les restaurants. L'identifiant se lit dans l'adresse :
+     casa-garcia.qarta.ma        → sous-domaine
+     qarta.ma/casa-garcia        → premier segment du chemin
+   Sans rien d'exploitable — déploiement Vercel actuel, fichier ouvert en local —
+   on retombe sur casa-garcia, ce qui garde l'existant intact. */
+function restoFromUrl(){
+  const host = location.hostname;
+  const parts = host.split('.');
+  const plain = ['localhost', 'www', 'vercel'];
+  if (parts.length >= 3 && !plain.includes(parts[0]) && !host.endsWith('vercel.app'))
+    return parts[0];
+
+  const seg = location.pathname.split('/').filter(Boolean)[0];
+  if (seg && /^[a-z0-9-]{2,40}$/.test(seg) && !seg.includes('.')) return seg;
+
+  return 'casa-garcia';
+}
+
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
-  resto: 'casa-garcia'
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
+  resto: restoFromUrl()
 };
 
 async function rpc(fn, args){
@@ -1074,7 +1107,13 @@ fetch('photos.json', { cache: 'no-store' })
 /* Supabase fait autorité. S'il ne répond pas — projet en pause, réseau coupé —
    la carte continue de fonctionner avec les valeurs du fichier. */
 rpc('resto_get', { p_id: SUPA.resto })
-  .then(r => { REMOTE = r || null; })
+  .then(r => {
+    REMOTE = r || null;
+    if (!REMOTE) console.warn('restaurant inconnu : ' + SUPA.resto);
+    /* l'identité vient d'arriver : on redessine, et on retombe sur une langue
+       proposée par ce restaurant si celle en cours n'y figure pas */
+    setLang(activeLangs().includes(lang) ? lang : (setting('default') || 'fr'));
+  })
   .catch(() => { REMOTE = null; });
 
 /* ---------------------------------------------------------------------------
@@ -1084,7 +1123,7 @@ rpc('resto_get', { p_id: SUPA.resto })
      3. aucun cache               → copie de secours inscrite dans ce fichier
    Un restaurant ne peut donc jamais se retrouver sans carte affichable.
 --------------------------------------------------------------------------- */
-const MENU_CACHE = 'cg_menu';
+const MENU_CACHE = 'cg_menu:' + SUPA.resto;
 
 /* Les plats arrivent à plat ; on les réinsère dans la structure de catégories
    et de sous-sections, dont les intitulés restent dans ce fichier. */
@@ -1132,11 +1171,16 @@ function applyMenu(rows, source){
 
 /* Trois niveaux, du moins au plus prioritaire :
    valeur du fichier → réglages publiés → réglages locaux (pour tester
-   avant publication). Ce dernier niveau ne concerne que cet appareil. */
+   avant publication). Ce dernier niveau ne concerne que cet appareil.
+   Les clés de la base sont en minuscules avec tiret bas ; celles du fichier
+   en camel : la table ci-dessous fait la correspondance. */
+const REMOTE_KEY = { orderLang:'order_lang', default:'deflang' };
 let localSet = {};
 const setting = k => {
-  const remoteKey = k === 'orderLang' ? 'order_lang' : k;
-  return (REMOTE && REMOTE[remoteKey]) ?? localSet[k] ?? SETTINGS[k] ?? CONFIG[k];
+  const rk = REMOTE_KEY[k] || k;
+  return (REMOTE && REMOTE[rk] != null && REMOTE[rk] !== '')
+       ? REMOTE[rk]
+       : (localSet[k] ?? SETTINGS[k] ?? CONFIG[k]);
 };
 const waNumber  = () => String(setting('whatsapp')).replace(/\D/g, '');
 
@@ -1185,8 +1229,8 @@ const LS = {
   raw(k, d){ try { return localStorage.getItem(k) || d; } catch { return d; } },
   rawSet(k, v){ try { localStorage.setItem(k, v); } catch {} }
 };
-let live = LS.get('cg_photos', {});
-localSet = LS.get('cg_settings', {});   // repli si Supabase est injoignable
+let live = LS.get('cg_photos:' + SUPA.resto, {});
+localSet = LS.get('cg_settings:' + SUPA.resto, {});   // repli si Supabase est injoignable
 
 /* Ordre de résolution : édition locale → photo gravée → fichier dans photos/ */
 function photoOf(d){
@@ -1508,7 +1552,7 @@ function renderDispo(msg){
     const g = dispoTab === 'off' ? catLabel(d.cat) : grpLabel(d.cat, d.grp);
     if (g && g !== lastGrp){ body += `<div class="dgrp">${esc(g)}</div>`; lastGrp = g; }
     const price = d.price != null
-      ? d.price + ' ' + CONFIG.currency
+      ? d.price + ' ' + setting('currency')
       : (d.mention ? (d.mention.fr || '') : '');
     body += `<div class="drow ${d.hidden ? 'off' : ''}">
       <span class="dn">${esc(d.name.fr)}<i>${esc(price)}</i></span>
@@ -1686,7 +1730,7 @@ async function fillAll(){
       const ph = await pexSearch(PEXQ[d.id] || d.n.en, 1);
       if (ph.length){
         live[d.id] = { u: squareUrl(ph[0].src.large2x || ph[0].src.large), c: ph[0].photographer };
-        LS.set('cg_photos', live);
+        LS.set('cg_photos:' + SUPA.resto, live);
       }
     } catch(e){ $('#log').textContent = e.message; break; }
     await new Promise(r => setTimeout(r, 350));
@@ -1792,7 +1836,7 @@ document.addEventListener('click', async e => {
   if (tk){
     const pool = JSON.parse($('#res').dataset.pool || '[]');
     live[pickId] = pool[+tk.dataset.take];
-    LS.set('cg_photos', live);
+    LS.set('cg_photos:' + SUPA.resto, live);
     renderMenu(); openAdmin(); return;
   }
   const cm = e.target.closest('[data-cam]');
@@ -1802,7 +1846,7 @@ document.addEventListener('click', async e => {
       const f = inp.files[0]; if (!f) return;
       shrink(f, uri => {
         live[pickId] = { u: uri, c: null };
-        if (!LS.set('cg_photos', live)) alert('Mémoire de l\'appareil pleine. Retire des photos avant d\'en ajouter.');
+        if (!LS.set('cg_photos:' + SUPA.resto, live)) alert('Mémoire de l\'appareil pleine. Retire des photos avant d\'en ajouter.');
         renderMenu(); openAdmin();
       });
     };
@@ -1818,7 +1862,7 @@ document.addEventListener('click', async e => {
   if (e.target.id === 'expo') return exportJSON();
   if (e.target.id === 'wipe'){
     if (!confirm('Retirer toutes les photos choisies sur cet appareil ?')) return;
-    live = {}; LS.set('cg_photos', live); renderMenu(); openAdmin();
+    live = {}; LS.set('cg_photos:' + SUPA.resto, live); renderMenu(); openAdmin();
   }
 });
 
@@ -2074,7 +2118,7 @@ const QR = (() => {
 })();
 
 loadCart();
-setLang(CONFIG.default);
+setLang(setting('default') || CONFIG.default);
 
 /* Chargement de la carte, une fois tout le reste en place.
    Le cache d'abord pour un affichage immédiat, puis Supabase qui fait autorité. */
