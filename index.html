@@ -79,6 +79,9 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
 body.console-only > *:not(.sheet){display:none}
 body.console-only{background:var(--cobalt-deep)}
 body.console-only .veil{background:rgba(11,42,91,.9)}
+.vitrine-note{font-size:15px;font-weight:600;color:var(--cobalt-deep);
+  text-align:center;padding:14px 10px 16px;margin-bottom:14px;
+  border-bottom:1px solid var(--chaux-2)}
 .nomenu{text-align:center;color:var(--ink-soft);font-size:15px;line-height:1.6;
   padding:60px 20px}
 .cat{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
@@ -717,6 +720,7 @@ const UI = {
  sendHint:L(["La commande s'ouvre dans WhatsApp. Vérifiez-la avant d'envoyer.",'The order opens in WhatsApp. Check it before sending.','El pedido se abre en WhatsApp. Revíselo antes de enviarlo.',"L'ordine si apre in WhatsApp. Controllalo prima di inviare.",'De bestelling opent in WhatsApp. Controleer voor het versturen.','Die Bestellung öffnet sich in WhatsApp. Bitte vor dem Senden prüfen.','ההזמנה תיפתח בוואטסאפ. בדקו לפני השליחה.','注文内容がWhatsAppで開きます。送信前にご確認ください。','订单将在 WhatsApp 中打开，发送前请确认。']),
  back:L(['Retour à la carte','Back to menu','Volver a la carta','Torna al menu','Terug naar de kaart','Zurück zur Karte','חזרה לתפריט','メニューに戻る','返回菜单']),
  view:L(['Voir','View','Ver','Vedi','Bekijken','Ansehen','הצג','確認','查看']),
+ vitrine:L(['Commandez depuis votre table','Order from your table','Pida desde su mesa','Ordina dal tuo tavolo','Bestel vanaf uw tafel','Bestellen Sie an Ihrem Tisch','להזמנה — סרקו מהשולחן שלכם','ご注文はテーブルから','请在餐桌上扫码点单']),
  noMenu:L(['La carte est en cours de préparation.','The menu is being prepared.','La carta está en preparación.','Il menu è in preparazione.','De kaart wordt voorbereid.','Die Karte wird gerade erstellt.','התפריט בהכנה.','メニューを準備中です。','菜单正在准备中。']),
  remove:L(['Retirer','Remove','Quitar','Rimuovi','Verwijderen','Entfernen','הסר','削除','移除']),
  addTo:L(['Ajouter','Add','Añadir','Aggiungi','Toevoegen','Hinzufügen','הוסף','追加','添加']),
@@ -737,6 +741,11 @@ const UI = {
 /* Le QR code de chaque table ouvre …/?t=7 : le numéro est donc déjà connu
    et le client n'a pas à le saisir. Sans paramètre, le champ reste affiché. */
 const TABLE = (new URLSearchParams(location.search).get('t') || '').trim().slice(0, 20);
+
+/* Mode consultation : la carte affichée en vitrine, pour le passant qui regarde
+   avant d'entrer. Ni bouton d'ajout, ni panier, ni engrenage — on ne commande
+   pas depuis le trottoir, et une commande sans table est ingérable en cuisine. */
+const VITRINE = new URLSearchParams(location.search).get('v') === '1';
 
 /* ---------------------------------------------------------------------------
    Sauvegarde du panier
@@ -846,6 +855,12 @@ function brandHTML(){
 }
 
 function renderFoot(){
+  if (VITRINE){
+    $('#foot').innerHTML =
+      `<div class="vitrine-note">${t('vitrine')}</div>` +
+      `${esc(setting('name') || CONFIG.name)} · ${esc(setting('city') || CONFIG.city)}`;
+    return;
+  }
   const names = [...new Set(photoDishes().map(d => creditOf(d.id)).filter(Boolean))];
   $('#foot').innerHTML = `${esc(setting('name') || CONFIG.name)} · ${esc(setting('city') || CONFIG.city)}` +
     (names.length ? `<div class="credits">Photos : ${names.join(', ')} — Pexels</div>` : '');
@@ -872,6 +887,11 @@ function renderChips(){
    écraser le nom du plat. Bouteilles à formats : le prix est sur les boutons. */
 function priceCell(d){
   if(d.price != null) return `<span class="leader"></span><span class="price">${money(d.price)}</span>`;
+  /* En vitrine, les boutons de format disparaissent : le prix des bouteilles
+     revient sur la ligne du nom, sinon il ne serait affiché nulle part. */
+  if (VITRINE && d.v)
+    return `<span class="leader"></span><span class="price">${
+      d.v.map(([k, pr]) => k + ' ' + pr).join(' · ')} ${setting('currency')}</span>`;
   return '';
 }
 function marketLine(d){
@@ -885,7 +905,7 @@ function dishHTML(d, withPic){
     ? (()=>{ const u = photoOf(d);
         return `<span class="thumb">${u ? `<img src="${esc(u)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`; })()
     : '';
-  const controls = d.v
+  const controls = (d.v && !VITRINE)
     ? `<div class="vars">${d.v.map(([k,pr]) => {
          const key = d.id+'|'+k, q = cart[key] || 0;
          return q
@@ -896,6 +916,17 @@ function dishHTML(d, withPic){
            : `<button class="var" data-add="${key}">${k} <b>${money(pr)}</b></button>`;
        }).join('')}</div>`
     : '';
+  if (VITRINE) return `<div class="dish">
+    ${thumb}
+    <div class="body">
+      <div class="line"><span class="nm">${nameOf(d)}</span>${priceCell(d)}</div>
+      ${marketLine(d)}
+      ${d.d ? `<div class="desc">${d.d[lang]||d.d.fr}</div>` : ''}
+      ${(d.arr || (d.t && d.t.length)) ? `<div class="tags">
+        ${d.arr ? `<span class="tag arr">${t('arrival')}</span>` : ''}
+        ${(d.t||[]).map(g=>`<span class="tag">${t(g)}</span>`).join('')}</div>` : ''}
+    </div></div>`;
+
   const plus = d.v ? '' : (qty
     ? `<div class="stepper">
          <button data-dec="${d.id}" aria-label="−">−</button>
@@ -937,6 +968,7 @@ function renderMenu(){
 }
 
 function renderBar(){
+  if (VITRINE){ $('#bar').classList.remove('on'); return; }
   const n = count();
   $('#bar').classList.toggle('on', n > 0);
   $('#barCount').textContent = n + ' ' + t('items');
@@ -1113,7 +1145,8 @@ window.addEventListener('popstate', () => { sheetPushed = false; });
 window.addEventListener('popstate', () => closeSheet(true));
 
 $('#globe').onclick = () => openSheet('langSheet');
-$('#gear').onclick  = () => openGear();
+if (VITRINE) $('#gear').style.display = 'none';
+else $('#gear').onclick = () => openGear();
 $('#barGo').onclick = () => { renderCart(); openSheet('cartSheet'); };
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape') closeSheet();
@@ -1153,7 +1186,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1780,7 +1813,8 @@ async function openConsole(msg){
     </div>`;
 }
 
-const restoUrl = id => location.origin + '/' + id;
+const restoUrl   = id => location.origin + '/' + id;
+const vitrineUrl = id => restoUrl(id) + '?v=1';
 
 /* Copie dans le presse-papier, avec repli sur les navigateurs qui la refusent
    hors interaction directe ou en connexion non sécurisée. */
@@ -1823,9 +1857,9 @@ function vitrine(id){
     <div class="adm-log">Sans numéro de table : pour la devanture, la carte de
       visite ou une publication. Les QR codes des tables se génèrent dans l'engrenage.</div>
     <div class="qrbox">
-      ${QR.svg(url, 240)}
+      ${QR.svg(vitrineUrl(id), 240)}
       <div class="qn">${esc(r ? r.name : id)}</div>
-      <div class="qu">${esc(url)}</div>
+      <div class="qu">${esc(vitrineUrl(id))}</div>
     </div>
     <div class="adm-bar">
       <button id="vprint"><i>🖨</i>Imprimer</button>
@@ -1845,7 +1879,7 @@ function printVitrine(){
   area.innerHTML = `<div class="qpage"><div class="qcard">
       <div class="qband"></div>
       <div class="qname">${esc(r ? r.name : id)}</div>
-      <div class="qcode">${QR.svg(restoUrl(id), 260)}</div>
+      <div class="qcode">${QR.svg(vitrineUrl(id), 260)}</div>
       <div class="qinvite">
         Scannez pour voir la carte<br>
         Scan for the menu · Escanee para ver la carta<br>
