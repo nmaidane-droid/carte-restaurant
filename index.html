@@ -43,8 +43,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .wall-top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
 .lock{border:1px solid rgba(242,240,235,.35);border-radius:999px;width:34px;height:34px;
   font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center}
-#gear{margin-inline-end:0}
-#lock{margin-inline-end:auto}
+#gear{margin-inline-end:auto}
 .lock:hover,.lock:focus-visible{background:rgba(242,240,235,.1)}
 .wall h1{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   font-family:var(--display);font-weight:800;line-height:.92;
@@ -76,6 +75,10 @@ nav::-webkit-scrollbar{display:none}
 
 main{padding:0 var(--pad)}
 section{padding:34px 0 6px;scroll-margin-top:58px}
+/* Racine : aucune carte à montrer derrière la console. */
+body.console-only > *:not(.sheet){display:none}
+body.console-only{background:var(--cobalt-deep)}
+body.console-only .veil{background:rgba(11,42,91,.9)}
 .nomenu{text-align:center;color:var(--ink-soft);font-size:15px;line-height:1.6;
   padding:60px 20px}
 .cat{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
@@ -389,7 +392,6 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
 <header class="wall">
   <div class="wall-top">
     <button class="lock" id="gear" aria-label="Paramètres">⚙️</button>
-    <button class="lock" id="lock" aria-label="Photos">🔒</button>
     <button class="globe" id="globe"><span class="fg" id="globeFlag">🇫🇷</span><span id="globeLbl">Français</span></button>
   </div>
   <h1 id="brand">Casa <em>García</em></h1>
@@ -428,7 +430,7 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
   <div class="veil" data-close></div>
   <div class="panel">
     <div class="phead"><h3 id="admTitle">Photos</h3>
-      <button class="x" data-close aria-label="Fermer">✕</button></div>
+      <button class="x" id="admX" data-close aria-label="Fermer">✕</button></div>
     <div id="admBody"></div>
   </div>
 </div>
@@ -1086,6 +1088,13 @@ function openSheet(id){
 }
 function closeSheet(fromPop){
   if (!sheetOpen) return;
+  /* À la racine il n'y a pas de carte derrière : on redemande le code
+     plutôt que de laisser un écran vide. */
+  if (!SUPA.resto){
+    if (fromPop) sheetPushed = false;
+    masterCode = null; restoList = null; adminCode = null;
+    return openPin();
+  }
   /* la console permet de visiter d'autres restaurants : en sortant, on
      restaure celui que l'adresse désigne, sinon la carte resterait
      sur l'établissement consulté */
@@ -1104,7 +1113,6 @@ window.addEventListener('popstate', () => { sheetPushed = false; });
 window.addEventListener('popstate', () => closeSheet(true));
 
 $('#globe').onclick = () => openSheet('langSheet');
-$('#lock').onclick  = () => openPin();
 $('#gear').onclick  = () => openGear();
 $('#barGo').onclick = () => { renderCart(); openSheet('cartSheet'); };
 document.addEventListener('keydown', e => {
@@ -1139,12 +1147,13 @@ function restoFromUrl(){
   const seg = location.pathname.split('/').filter(Boolean)[0];
   if (seg && /^[a-z0-9-]{2,40}$/.test(seg) && !seg.includes('.')) return seg;
 
-  return 'casa-garcia';
+  /* Rien dans l'adresse : c'est la console, pas un restaurant. */
+  return null;
 }
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1168,7 +1177,7 @@ let REMOTE   = null;  // identité et réglages du restaurant ; null si base inj
 
 /* Supabase fait autorité. S'il ne répond pas — projet en pause, réseau coupé —
    la carte continue de fonctionner avec les valeurs du fichier. */
-rpc('resto_get', { p_id: SUPA.resto })
+if (SUPA.resto) rpc('resto_get', { p_id: SUPA.resto })
   .then(r => {
     REMOTE = r || null;
     if (!REMOTE) console.warn('restaurant inconnu : ' + SUPA.resto);
@@ -1327,6 +1336,8 @@ let padCode = '', padOpts = null;
 
 function openPad(opts){
   padOpts = opts; padCode = '';
+  /* à la racine, rien derrière : la croix n'aurait rien à révéler */
+  const x = $('#admX'); if (x) x.style.display = SUPA.resto ? '' : 'none';
   $('#admTitle').textContent = opts.title;
   $('#admBody').innerHTML = `
     <div class="pinwrap">
@@ -1716,7 +1727,7 @@ let restoList = null;
 
 function openPin(){
   openPad({
-    title: 'Console',
+    title: SUPA.resto ? 'Console' : 'Carte Restaurant',
     subtitle: 'Code maître',
     onDone: async code => {
       try {
@@ -1731,6 +1742,7 @@ function openPin(){
 
 async function openConsole(msg){
   $('#admTitle').textContent = 'Restaurants';
+  const x = $('#admX'); if (x) x.style.display = '';
   if (!restoList){
     $('#admBody').innerHTML = '<div class="adm-log">Chargement…</div>';
     try { restoList = await rpc('resto_list', { p_code: masterCode }); }
@@ -2473,12 +2485,12 @@ if ('serviceWorker' in navigator){
 
 /* Chargement de la carte, une fois tout le reste en place.
    Le cache d'abord pour un affichage immédiat, puis Supabase qui fait autorité. */
-try {
+if (SUPA.resto) try {
   const c = LS.get(MENU_CACHE, null);
   if (c && Array.isArray(c.rows)) applyMenu(c.rows, 'en cache');
 } catch {}
 
-rpc('resto_menu', { p_id: SUPA.resto })
+if (SUPA.resto) rpc('resto_menu', { p_id: SUPA.resto })
   .then(rows => {
     if (!Array.isArray(rows)) return;      // une liste vide reste une réponse valable
     applyMenu(rows, 'Supabase');
@@ -2486,10 +2498,25 @@ rpc('resto_menu', { p_id: SUPA.resto })
   })
   .catch(() => { /* cache ou copie de secours : la carte reste affichée */ });
 
-/* Premier écran : la grille des langues. Aucune entrée d'historique ici —
-   Chrome la sauterait, et le premier choix de langue ferait quitter le site. */
-$('#langSheet').classList.add('on');
-sheetOpen = 'langSheet';
+/* Porte de service : depuis la carte d'un restaurant, ajouter #console à
+   l'adresse ouvre la console. Aucun bouton visible — un pavé numérique n'a
+   rien à faire sur une carte destinée aux clients. */
+if (SUPA.resto){
+  const byHash = () => { if (location.hash === '#console') openPin(); };
+  window.addEventListener('hashchange', byHash);
+  byHash();
+}
+
+if (!SUPA.resto){
+  /* Racine du site : la console, pas une carte. */
+  document.body.classList.add('console-only');
+  openPin();
+} else {
+  /* Premier écran : la grille des langues. Aucune entrée d'historique ici —
+     Chrome la sauterait, et le premier choix de langue ferait quitter le site. */
+  $('#langSheet').classList.add('on');
+  sheetOpen = 'langSheet';
+}
 </script>
 </body>
 </html>
