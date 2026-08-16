@@ -198,6 +198,32 @@ textarea{min-height:74px;resize:vertical}
 .tbl-add input{flex:1}
 .tbl-add button{flex:none;min-height:44px;border:1.5px solid var(--cobalt);
   background:var(--cobalt);color:#fff;border-radius:10px;padding:0 18px;font-weight:600}
+/* ---------- disponibilité des plats ---------- */
+.dtabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin:10px 0 4px}
+.dtabs::-webkit-scrollbar{display:none}
+.dtab{flex:none;white-space:nowrap;border:1px solid var(--sand);border-radius:999px;
+  padding:8px 14px;font-size:13.5px;color:var(--ink-soft);background:#fff}
+.dtab.on{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.dtab.off-tab.on{background:#B3261E;border-color:#B3261E}
+.drow{display:flex;align-items:center;gap:11px;padding:11px 0;
+  border-bottom:1px solid var(--chaux-2)}
+.drow:last-child{border-bottom:0}
+.drow .dn{flex:1;min-width:0;font-size:15px;line-height:1.25}
+.drow .dn i{display:block;font-style:normal;font-family:var(--mono);font-size:12px;
+  color:var(--ink-soft);margin-top:2px}
+.drow.off .dn{color:var(--ink-soft);text-decoration:line-through}
+.drow.off .dn i{text-decoration:none}
+.sw{width:52px;height:30px;flex:none;border-radius:999px;background:var(--sand);
+  position:relative;transition:background .18s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;
+  border-radius:50%;background:#fff;transition:transform .18s;
+  box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sw.on{background:#2E7D32}
+.sw.on::after{transform:translateX(22px)}
+.dgrp{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+  margin:16px 0 2px;padding-top:8px;border-top:1px solid var(--chaux-2)}
+.dgrp:first-child{border-top:0;padding-top:0;margin-top:8px}
+
 .fmt{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
 .fmt button{border:1.5px solid var(--sand);border-radius:11px;padding:16px 12px;text-align:start}
 .fmt button:hover{border-color:var(--cobalt)}
@@ -953,7 +979,7 @@ document.addEventListener('keydown', e => {
 --------------------------------------------------------------------------- */
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: 'casa-garcia'
 };
 
@@ -1225,6 +1251,7 @@ function firstRun(){
 }
 
 function gearPanel(msg){
+  allDishesAdm = null;      // rechargée à la prochaine ouverture, pour rester à jour
   $('#admTitle').textContent = 'Paramètres';
   $('#admBody').innerHTML = `
     ${msg ? `<div class="adm-log">${msg}</div>` : ''}
@@ -1259,6 +1286,11 @@ function gearPanel(msg){
     </div>
     <div class="adm-bar">
       <button class="solid wide" id="qrall"><i>🖨</i>Imprimer toutes les tables</button>
+    </div>
+
+    <label>Disponibilité des plats</label>
+    <div class="adm-bar">
+      <button class="wide" id="dispo"><i>🍽</i>Gérer les plats disponibles</button>
     </div>
     <div class="adm-log" id="tlog"></div>`;
 }
@@ -1363,6 +1395,110 @@ function doPrint(fmt){
     window.print();
     document.body.classList.remove('printing');
   }, 120);
+}
+
+/* ---------------------------------------------------------------------------
+   Disponibilité des plats
+   ---------------------------------------------------------------------------
+   Une catégorie à la fois, plus un onglet « Indisponibles » qui rassemble
+   tout ce qui est éteint, toutes catégories confondues : c'est là que le
+   patron retrouve ce qu'il a coupé la veille.
+   Rien n'est supprimé : le plat garde son prix et ses traductions.
+--------------------------------------------------------------------------- */
+let allDishesAdm = null;    // carte complète, plats éteints compris
+let dispoTab = null;        // catégorie affichée, ou 'off'
+
+async function openDispo(msg){
+  $('#admTitle').textContent = 'Plats disponibles';
+  if (!allDishesAdm){
+    $('#admBody').innerHTML = '<div class="adm-log">Chargement de la carte…</div>';
+    try {
+      allDishesAdm = await rpc('resto_menu_all',
+        { p_id: SUPA.resto, p_code: ownerCode });
+    } catch(e){
+      $('#admBody').innerHTML =
+        `<div class="adm-log">${e.message}</div>
+         <div class="adm-bar"><button class="wide" id="gback"><i>←</i>Retour aux paramètres</button></div>`;
+      return;
+    }
+  }
+  if (!dispoTab) dispoTab = MENU_FALLBACK[0].id;
+  renderDispo(msg);
+}
+
+function catLabel(id){
+  const c = MENU_FALLBACK.find(x => x.id === id);
+  return c ? (c.cat.fr || id) : id;
+}
+function grpLabel(cat, grp){
+  const c = MENU_FALLBACK.find(x => x.id === cat);
+  const g = c && c.groups[grp];
+  return (g && g.sub) ? g.sub.fr : null;
+}
+
+function renderDispo(msg){
+  const off = allDishesAdm.filter(d => d.hidden);
+  const rows = dispoTab === 'off'
+    ? off
+    : allDishesAdm.filter(d => d.cat === dispoTab);
+
+  let body = '';
+  let lastGrp = null;
+  for (const d of rows){
+    const g = dispoTab === 'off' ? catLabel(d.cat) : grpLabel(d.cat, d.grp);
+    if (g && g !== lastGrp){ body += `<div class="dgrp">${esc(g)}</div>`; lastGrp = g; }
+    const price = d.price != null
+      ? d.price + ' ' + CONFIG.currency
+      : (d.mention ? (d.mention.fr || '') : '');
+    body += `<div class="drow ${d.hidden ? 'off' : ''}">
+      <span class="dn">${esc(d.name.fr)}<i>${esc(price)}</i></span>
+      <button class="sw ${d.hidden ? '' : 'on'}" data-dish="${esc(d.id)}"
+        aria-label="${d.hidden ? 'Rendre disponible' : 'Rendre indisponible'}"></button>
+    </div>`;
+  }
+  if (!rows.length){
+    body = `<div class="adm-log">${dispoTab === 'off'
+      ? 'Aucun plat indisponible. Toute la carte est servie.'
+      : 'Aucun plat dans cette catégorie.'}</div>`;
+  }
+
+  $('#admBody').innerHTML = `
+    ${msg ? `<div class="adm-log">${msg}</div>` : ''}
+    <div class="dtabs">
+      ${MENU_FALLBACK.map(c =>
+        `<button class="dtab ${dispoTab === c.id ? 'on' : ''}" data-dtab="${c.id}">
+           ${esc(c.cat.fr)}</button>`).join('')}
+      <button class="dtab off-tab ${dispoTab === 'off' ? 'on' : ''}" data-dtab="off">
+        Indisponibles${off.length ? ' (' + off.length + ')' : ''}</button>
+    </div>
+    <div class="adm-log">${off.length
+      ? off.length + (off.length > 1 ? ' plats retirés de la carte' : ' plat retiré de la carte')
+      : 'Toute la carte est disponible.'}</div>
+    ${body}
+    <div class="adm-bar"><button class="wide" id="gback"><i>←</i>Retour aux paramètres</button></div>`;
+}
+
+async function toggleDish(id){
+  const d = allDishesAdm.find(x => x.id === id);
+  if (!d) return;
+  const next = !d.hidden;
+  d.hidden = next;                       // affichage immédiat, sans attendre le réseau
+  renderDispo();
+  try {
+    const ok = await rpc('resto_menu_hide',
+      { p_id: SUPA.resto, p_code: ownerCode, p_dish: id, p_hidden: next });
+    if (!ok){ d.hidden = !next; return renderDispo('Session expirée, reprenez depuis le code.'); }
+    /* la carte du client change tout de suite : on jette le cache et on recharge */
+    try { localStorage.removeItem(MENU_CACHE); } catch {}
+    const rows = await rpc('resto_menu', { p_id: SUPA.resto });
+    if (Array.isArray(rows) && rows.length){
+      applyMenu(rows, 'Supabase');
+      LS.set(MENU_CACHE, { at: Date.now(), rows });
+    }
+  } catch(e){
+    d.hidden = !next;
+    renderDispo(e.message);
+  }
 }
 
 /* Changement de code, commun au patron et à l'administrateur. */
@@ -1573,6 +1709,12 @@ document.addEventListener('click', async e => {
   if (kk) return padKey(kk.dataset.k);
   if (e.target.id === 'gsave') return gearSave();
   if (e.target.id === 'tadd')  return addTable();
+  if (e.target.id === 'dispo') return openDispo();
+  if (e.target.id === 'gback'){ dispoTab = null; return gearPanel(); }
+  const dt = e.target.closest('[data-dtab]');
+  if (dt){ dispoTab = dt.dataset.dtab; return renderDispo(); }
+  const sw = e.target.closest('[data-dish]');
+  if (sw) return toggleDish(sw.dataset.dish);
   if (e.target.id === 'qrall'){
     const l = tablesList();
     if (!l.length){ $('#tlog').textContent = 'Ajoutez au moins une table.'; return; }
