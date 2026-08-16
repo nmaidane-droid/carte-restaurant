@@ -871,7 +871,7 @@ function dishHTML(d, withPic){
   const qty = cart[d.id] || 0;
   const thumb = withPic
     ? (()=>{ const u = photoOf(d);
-        return `<span class="thumb">${u ? `<img src="${u}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`; })()
+        return `<span class="thumb">${u ? `<img src="${esc(u)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`; })()
     : '';
   const controls = d.v
     ? `<div class="vars">${d.v.map(([k,pr]) => {
@@ -1134,7 +1134,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1150,29 +1150,11 @@ async function rpc(fn, args){
   return body;
 }
 
-/* photos.json est l'ancien emplacement, commun à tous les restaurants.
-   Il n'est plus alimenté : les photos vivent dans la carte, par restaurant.
-   On continue de le lire en dernier recours, le temps que Casa García soit
-   republié depuis le cadenas. Il pourra être supprimé du dépôt ensuite. */
-/* Les photos publiées sont portées par chaque plat, dans la base : elles sont
-   donc propres à chaque restaurant. PHOTOS reste alimenté à partir de la carte
-   reçue, pour ne rien changer au reste du code. */
-let PHOTOS   = {};   // { id : {u, c} }, reconstruit depuis la carte
-let LEGACY   = {};   // ancien photos.json, lu en dernier recours
-let SETTINGS = {};   // réglages hérités de photos.json, conservés en secours
-
-let REMOTE = null;    // réglages Supabase ; null si la base est injoignable
-
-fetch('photos.json', { cache: 'no-store' })
-  .then(r => r.ok ? r.json() : null)
-  .then(j => {
-    if (!j) return;
-    SETTINGS = j._settings || {};
-    delete j._settings;
-    LEGACY = j;
-    renderMenu(); renderFoot();
-  })
-  .catch(() => {});
+/* Les photos et les réglages vivent dans Supabase, rangés par restaurant.
+   Aucun fichier commun : deux établissements ne peuvent plus se mélanger. */
+let PHOTOS   = {};    // { id : {u, c} }, reconstruit depuis la carte reçue
+let SETTINGS = {};    // plus alimenté ; conservé comme niveau de repli de setting()
+let REMOTE   = null;  // identité et réglages du restaurant ; null si base injoignable
 
 /* Supabase fait autorité. S'il ne répond pas — projet en pause, réseau coupé —
    la carte continue de fonctionner avec les valeurs du fichier. */
@@ -1218,8 +1200,7 @@ function buildMenu(rows){
       m: r.mention || undefined,
       t: r.tags || [],
       arr: !!r.arr,
-      v: r.variants || undefined,
-      p: r.photo || undefined
+      v: r.variants || undefined
     });
     placed++;
   }
@@ -1309,18 +1290,20 @@ localSet = LS.get('cg_settings:' + SUPA.resto, {});   // repli si Supabase est i
 
 /* Ordre de résolution : édition locale → photo gravée → fichier dans photos/ */
 function photoOf(d){
-  const l = live[d.id];   if (l && l.u) return l.u;
-  const b = PHOTOS[d.id]; if (b && b.u) return b.u;
-  const g = LEGACY[d.id]; if (g && g.u) return g.u;
-  return d.p || null;
+  const l = live[d.id];   if (l && l.u) return l.u;   // choisie sur cet appareil
+  const b = PHOTOS[d.id]; if (b && b.u) return b.u;   // publiée en base
+  return null;
 }
 function creditOf(id){
   const l = live[id];   if (l && l.c) return l.c;
   const b = PHOTOS[id]; if (b && b.c) return b.c;
-  const g = LEGACY[id]; if (g && g.c) return g.c;
   return null;
 }
-const photoDishes = () => allDishes().filter(d => d.p);
+/* Les plats illustrables sont ceux des catégories marquées « pic » —
+   entrées, plats, desserts. Se fier à un chemin de fichier était fragile :
+   il pouvait désigner une image inexistante. */
+const photoDishes = () =>
+  MENU.filter(c => c.pic).flatMap(c => c.groups.flatMap(g => g.dishes));
 
 
 /* ---------- pavé numérique ---------- */
@@ -1967,7 +1950,7 @@ function duplicates(){
   const seen = new Map();
   for (const d of photoDishes()){
     const u = photoOf(d);
-    if (!u || u === d.p) continue;
+    if (!u) continue;
     seen.set(u, (seen.get(u) || 0) + 1);
   }
   return new Set([...seen].filter(([,c]) => c > 1).map(([u]) => u));
@@ -1979,9 +1962,8 @@ function openAdmin(msg){
   $('#admTitle').textContent = 'Photos des plats';
   const key = LS.raw('cg_pexkey','');
   const n   = photoDishes().length;
-  const got = photoDishes().filter(d => photoOf(d) && photoOf(d) !== d.p).length;
-  const toPublish = photoDishes().filter(d =>
-    live[d.id] || (!PHOTOS[d.id] && LEGACY[d.id])).length;
+  const got = photoDishes().filter(d => photoOf(d)).length;
+  const toPublish = photoDishes().filter(d => live[d.id]).length;
   const dup = duplicates();
   const list = admFilter === 'dupes'
              ? photoDishes().filter(d => dup.has(photoOf(d)))
@@ -2019,7 +2001,7 @@ function openAdmin(msg){
        : got+' / '+n+' plats illustrés'}</div>
     <div class="adm-grid">
       ${list.map(d => {
-        const u = photoOf(d) === d.p ? null : photoOf(d);
+        const u = photoOf(d);
         return `<div class="adm-cell">
           <button class="sq ${u?'':'none'}" data-pick="${d.id}">
             ${u ? `<img src="${u}" alt="" onerror="this.remove()">` : ''}</button>
@@ -2048,7 +2030,7 @@ async function pexSearch(query, n){
 const squareUrl = src => src.split('?')[0] + '?auto=compress&cs=tinysrgb&fit=crop&w=800&h=800';
 
 async function fillAll(){
-  const todo = photoDishes().filter(d => !live[d.id] && !PHOTOS[d.id]);
+  const todo = photoDishes().filter(d => !photoOf(d));
   if (!todo.length){ $('#log').textContent = 'Rien à remplir.'; return; }
   for (let i = 0; i < todo.length; i++){
     const d = todo[i];
@@ -2106,12 +2088,10 @@ function shrink(file, cb){
 }
 
 async function exportJSON(){
-  /* On publie les choix locaux et, pour la bascule, ce qui vient encore de
-     l'ancien photos.json : une seule publication suffit à tout basculer. */
   const out = {};
   for (const d of photoDishes()){
-    const src = live[d.id] || (PHOTOS[d.id] ? null : LEGACY[d.id]);
-    if (src && src.u) out[d.id] = { u: src.u, c: src.c || null };
+    const l = live[d.id];
+    if (l && l.u) out[d.id] = { u: l.u, c: l.c || null };
   }
   const n = Object.keys(out).length;
   if (!n){ $('#log').textContent = 'Aucune photo à publier.'; return; }
