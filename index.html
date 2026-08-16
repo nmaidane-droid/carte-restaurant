@@ -110,8 +110,13 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
   color:var(--cobalt);display:flex;gap:7px;align-items:center;transition:background .15s,color .15s}
 .var:hover{background:var(--cobalt);color:var(--chaux)}
 .var b{font-family:var(--mono);font-weight:500}
-.var .vq{background:var(--ochre);color:#231703;border-radius:999px;font-family:var(--mono);
-  font-size:11px;padding:0 6px}
+.varq{gap:7px;padding:2px 3px 2px 11px}
+.varq:hover{background:none;color:var(--cobalt)}
+.varq button{width:28px;height:28px;flex:none;border-radius:50%;color:var(--cobalt);
+  font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center}
+.varq button:active{background:var(--cobalt);color:var(--chaux)}
+.varq .q{font-family:var(--mono);font-size:13px;min-width:16px;text-align:center;
+  color:var(--cobalt-deep)}
 
 .bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--cobalt-deep);color:var(--chaux);
   padding:14px var(--pad);padding-bottom:calc(14px + env(safe-area-inset-bottom));
@@ -569,6 +574,9 @@ function setLang(l){
   $('#sub').textContent  = CONFIG.city + ' · ' + CONFIG.tagline;
   renderFoot();
   renderChips(); renderMenu(); renderBar(); renderLangGrid();
+  /* le panier aussi : il peut être ouvert, ou rouvert plus tard
+     avec son contenu figé dans la langue précédente */
+  renderCart();
 }
 
 /* Crédit photographes : exigé par les conditions d'utilisation de Pexels
@@ -610,9 +618,13 @@ function dishHTML(d, withPic){
     : '';
   const controls = d.v
     ? `<div class="vars">${d.v.map(([k,pr]) => {
-         const q = cart[d.id+'|'+k] || 0;
-         return `<button class="var" data-add="${d.id}|${k}">${k}
-                   <b>${money(pr)}</b>${q ? `<span class="vq">${q}</span>` : ''}</button>`;
+         const key = d.id+'|'+k, q = cart[key] || 0;
+         return q
+           ? `<div class="var varq"><span>${k}</span><b>${money(pr)}</b>
+                <button data-dec="${key}" aria-label="−">−</button>
+                <span class="q">${q}</span>
+                <button data-add="${key}" aria-label="+">+</button></div>`
+           : `<button class="var" data-add="${key}">${k} <b>${money(pr)}</b></button>`;
        }).join('')}</div>`
     : '';
   const plus = d.v ? '' : (qty
@@ -716,7 +728,9 @@ function buildMessage(){
   m += `${'—'.repeat(12)}\n`;
   for(const [key,q] of Object.entries(cart)){
     const r = resolve(key);
-    m += `${q} × ${kitchen(r.d)}${r.k ? ' ('+r.k+')' : ''} — ${r.price ? money(r.price*q) : lbl.m}${r.d.arr ? ' '+lbl.a : ''}\n`;
+    const mention = r.price ? money(r.price*q)
+                  : (r.d.m ? (r.d.m[K] || r.d.m.fr) : lbl.m);
+    m += `${q} × ${kitchen(r.d)}${r.k ? ' ('+r.k+')' : ''} — ${mention}${r.d.arr ? ' '+lbl.a : ''}\n`;
   }
   m += `${'—'.repeat(12)}\n*${lbl.s} : ${money(total())}${hasMarket()?' +':''}*\n`;
   if(nt) m += `${lbl.r} : ${nt}\n`;
