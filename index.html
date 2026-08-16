@@ -173,11 +173,12 @@ textarea{min-height:74px;resize:vertical}
 .tbl-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--sand);
   background:#fff;border-radius:8px;padding:6px 8px 6px 12px;font-size:14px}
 .tbl-chip b{font-family:var(--mono);font-weight:500}
-.tbl-chip button{width:28px;height:28px;border-radius:50%;font-size:14px;line-height:1;
-  display:flex;align-items:center;justify-content:center;color:var(--cobalt);
-  border:1px solid var(--sand);background:#fff}
-.tbl-chip button:hover{background:var(--chaux-2)}
-.tbl-chip button.del{color:#B3261E}
+.tbl-chip button{width:28px;height:28px;flex:none;border-radius:50%;font-size:13px;line-height:1;
+  display:flex;align-items:center;justify-content:center;border:0;
+  background:var(--cobalt);color:#fff}
+.tbl-chip button:hover{background:var(--cobalt-deep)}
+.tbl-chip button.del{background:#B3261E}
+.tbl-chip button.del:hover{background:#8E1E19}
 .tbl-add{display:flex;gap:8px}
 .tbl-add input{flex:1}
 .tbl-add button{flex:none;min-height:44px;border:1.5px solid var(--cobalt);
@@ -885,7 +886,7 @@ document.addEventListener('keydown', e => {
 --------------------------------------------------------------------------- */
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: 'casa-garcia'
 };
 
