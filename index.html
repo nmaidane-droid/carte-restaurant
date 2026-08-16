@@ -182,6 +182,8 @@ textarea{min-height:74px;resize:vertical}
   font-size:10.5px;padding:5px 2px;color:var(--ink-soft);background:#fff}
 .res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .res img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--sand);display:block}
+.steps{margin:14px 0 14px 18px;font-size:14px;line-height:1.7;color:var(--ink)}
+.steps li{padding-left:4px}
 .credits{margin-top:14px;font-size:11.5px;line-height:1.5;color:var(--ink-soft)}
 
 footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
@@ -761,8 +763,15 @@ document.addEventListener('keydown', e => {
    ============================================================ */
 const PIN_HASH = 'c27930584abbf709a1858e7e75ec8e0e579cffd2d56c36142f15190a4df3a4c2';
 
-/* Photos gravées. Vide pour l'instant : à remplir depuis l'export JSON. */
-const PHOTOS = {};
+/* Photos publiées. Chargées depuis photos.json à la racine du dépôt.
+   Le fichier est produit par le bouton « Télécharger photos.json » de
+   l'écran cadenas, puis déposé sur GitHub. Son absence n'est pas une
+   erreur : l'application fonctionne sans, avec les motifs d'attente. */
+let PHOTOS = {};
+fetch('photos.json', { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : null)
+  .then(j => { if (j) { PHOTOS = j; renderMenu(); renderFoot(); } })
+  .catch(() => {});
 
 /* Requêtes Pexels par plat. En anglais et en espagnol : le français ne
    donne presque rien. Modifiables ici si un résultat tombe à côté. */
@@ -865,7 +874,7 @@ function openAdmin(){
     <div class="adm-bar">
       <button class="solid" id="fill">Remplir les manquantes</button>
       <button class="${admFilter==='dupes'?'solid':''}" id="dupes">Doublons${dup.size?' ('+dup.size+')':''}</button>
-      <button id="expo">Exporter</button>
+      <button id="expo">Télécharger photos.json</button>
       <button class="warn" id="wipe">Tout retirer</button>
     </div>
     <div class="adm-log" id="log">${admFilter==='dupes'
@@ -966,13 +975,28 @@ function exportJSON(){
     const src = live[d.id] || PHOTOS[d.id];
     if (src) out[d.id] = src;
   }
-  const txt = JSON.stringify(out, null, 1);
-  $('#admTitle').textContent = 'Export';
+  const n = Object.keys(out).length;
+  if (!n){ $('#log').textContent = 'Aucune photo à publier.'; return; }
+
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'photos.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+  $('#admTitle').textContent = 'Fichier téléchargé';
   $('#admBody').innerHTML = `
-    <div class="adm-log">${Object.keys(out).length} photos. Envoie ce texte pour gravure définitive.</div>
-    <textarea id="ex" style="min-height:220px;font-family:var(--mono);font-size:11px">${txt}</textarea>
-    <div class="adm-bar"><button class="solid" id="copy">Copier</button>
-      <button id="back">Retour</button></div>`;
+    <div class="adm-log">photos.json · ${n} photos</div>
+    <ol class="steps">
+      <li>Ouvre <b>github.com/nmaidane/casa-garcia</b></li>
+      <li><b>Add file → Upload files</b></li>
+      <li>Dépose <b>photos.json</b> à la racine, à côté de index.html</li>
+      <li>Commit. Vercel redéploie tout seul en une minute.</li>
+    </ol>
+    <div class="adm-log">Pour voir ce que voient les clients, ouvre le site
+      en navigation privée : tes choix locaux n'y apparaissent pas.</div>
+    <div class="adm-bar"><button class="solid" id="back">Retour</button></div>`;
 }
 
 /* ---------- interactions de l'administration ---------- */
@@ -1007,11 +1031,6 @@ document.addEventListener('click', async e => {
     return openAdmin();
   }
   if (e.target.id === 'expo') return exportJSON();
-  if (e.target.id === 'copy'){
-    try { await navigator.clipboard.writeText($('#ex').value); e.target.textContent = 'Copié'; }
-    catch { $('#ex').select(); }
-    return;
-  }
   if (e.target.id === 'wipe'){
     if (!confirm('Retirer toutes les photos choisies sur cet appareil ?')) return;
     live = {}; LS.set('cg_photos', live); renderMenu(); openAdmin();
