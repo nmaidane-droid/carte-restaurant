@@ -1,6 +1,6 @@
 {
   "name": "Carte Restaurant",
-  "short_name": "Carte",
+  "short_name": "Menu",
   "description": "La carte du restaurant, dans votre langue. Commandez depuis votre table.",
   "scope": "/",
   "display": "standalone",
