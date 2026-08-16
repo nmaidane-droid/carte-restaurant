@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Casa García — Asilah</title>
 <meta name="theme-color" content="#0B2A5B">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Karla:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -214,6 +220,19 @@ textarea{min-height:74px;resize:vertical}
   border-radius:4px;padding:3px 7px}
 .rbadge.warn{background:#FBEDEB;color:#B3261E}
 .rbadge.new{background:#EAF2FF;color:var(--cobalt)}
+.rurl{display:flex;align-items:center;gap:7px;margin:-4px 0 12px;padding:9px 11px;
+  border:1px solid var(--chaux-2);border-radius:10px;background:#FAFBFC}
+.rurl code{flex:1;min-width:0;font-family:var(--mono);font-size:11.5px;color:var(--cobalt-deep);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rurl button{width:32px;height:32px;flex:none;border-radius:8px;border:1px solid var(--sand);
+  background:#fff;font-size:14px;line-height:1;
+  display:flex;align-items:center;justify-content:center}
+.rurl button:hover{border-color:var(--cobalt)}
+.qrbox{text-align:center;padding:18px 0 6px}
+.qrbox svg{display:block;margin:0 auto;border:1px solid var(--sand);border-radius:12px}
+.qrbox .qn{font-family:var(--display);font-size:19px;margin-top:12px}
+.qrbox .qu{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);
+  margin-top:4px;word-break:break-all}
 
 /* ---------- disponibilité des plats ---------- */
 .dtabs{display:flex;align-items:stretch;gap:6px;margin:10px 0 8px}
@@ -778,6 +797,17 @@ function setLang(l){
   $('#demo').textContent   = CONFIG.demo ? t('demo') : '';
   $('#demo').style.display = CONFIG.demo ? '' : 'none';
   $('#brand').innerHTML  = brandHTML();
+  document.title = (setting('name') || CONFIG.name) +
+                   (setting('city') ? ' — ' + setting('city') : '');
+  /* Sur iOS, c'est cette balise qui nomme l'icône ajoutée à l'écran d'accueil.
+     Ne pas nommer la variable « t » : c'est déjà la fonction de traduction. */
+  let iosName = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if (!iosName){
+    iosName = document.createElement('meta');
+    iosName.name = 'apple-mobile-web-app-title';
+    document.head.appendChild(iosName);
+  }
+  iosName.content = setting('name') || CONFIG.name;
   $('#sub').textContent  = [setting('city'), setting('tagline')].filter(Boolean).join(' · ');
   renderFoot();
   renderChips(); renderMenu(); renderBar(); renderLangGrid();
@@ -1094,7 +1124,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1707,11 +1737,94 @@ async function openConsole(msg){
           ${!r.active ? '<span class="rbadge warn">suspendu</span>' : ''}
           ${!r.owner_set ? '<span class="rbadge new">non activé</span>' : ''}
           <span class="rgo">→</span>
-        </button>`).join('')}
+        </button>
+        <div class="rurl">
+          <code>${esc(restoUrl(r.id).replace(/^https?:\/\//, ''))}</code>
+          <button data-copy="${esc(restoUrl(r.id))}" title="Copier l'adresse">⧉</button>
+          <button data-share="${esc(r.id)}" title="Envoyer au restaurateur">↗</button>
+          <button data-vitrine="${esc(r.id)}" title="QR code pour la vitrine">▦</button>
+        </div>`).join('')}
     </div>
     <div class="adm-bar">
       <button class="solid wide" id="rnew"><i>＋</i>Nouveau restaurant</button>
     </div>`;
+}
+
+const restoUrl = id => location.origin + '/' + id;
+
+/* Copie dans le presse-papier, avec repli sur les navigateurs qui la refusent
+   hors interaction directe ou en connexion non sécurisée. */
+async function copyText(txt, el){
+  try {
+    await navigator.clipboard.writeText(txt);
+    if (el){ const old = el.textContent; el.textContent = '✓';
+             setTimeout(() => { el.textContent = old; }, 1400); }
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch {}
+    ta.remove();
+  }
+}
+
+/* Partage natif d'Android : le patron reçoit son lien par WhatsApp en deux gestes.
+   Sur un navigateur sans partage natif, on retombe sur la copie. */
+async function shareResto(id){
+  const r = (restoList || []).find(x => x.id === id);
+  const url = restoUrl(id);
+  const txt = `Voici la carte de ${r ? r.name : id} :\n${url}\n\n` +
+              `Ouvrez ce lien, touchez ⚙️ et choisissez votre code à six chiffres.`;
+  if (navigator.share){
+    try { await navigator.share({ title: r ? r.name : id, text: txt, url }); return; }
+    catch { return; }                 // partage annulé : on ne fait rien
+  }
+  copyText(txt);
+  openConsole('Lien copié : le partage natif n\'est pas disponible sur ce navigateur.');
+}
+
+/* QR code de l'établissement, sans numéro de table : pour la vitrine,
+   la devanture ou une carte de visite. À ne pas confondre avec ceux des tables. */
+function vitrine(id){
+  const r = (restoList || []).find(x => x.id === id);
+  const url = restoUrl(id);
+  $('#admTitle').textContent = 'QR code vitrine';
+  $('#admBody').innerHTML = `
+    <div class="adm-log">Sans numéro de table : pour la devanture, la carte de
+      visite ou une publication. Les QR codes des tables se génèrent dans l'engrenage.</div>
+    <div class="qrbox">
+      ${QR.svg(url, 240)}
+      <div class="qn">${esc(r ? r.name : id)}</div>
+      <div class="qu">${esc(url)}</div>
+    </div>
+    <div class="adm-bar">
+      <button class="solid" id="vprint"><i>🖨</i>Imprimer</button>
+      <button id="vback"><i>←</i>Retour</button>
+    </div>`;
+  vitrineFor = id;
+}
+let vitrineFor = null;
+
+function printVitrine(){
+  const id = vitrineFor;
+  const r = (restoList || []).find(x => x.id === id);
+  printQueue = [];
+  let area = document.getElementById('printArea');
+  if (!area){ area = document.createElement('div'); area.id = 'printArea';
+              document.body.appendChild(area); }
+  area.innerHTML = `<div class="qpage"><div class="qcard">
+      <div class="qband"></div>
+      <div class="qname">${esc(r ? r.name : id)}</div>
+      <div class="qcode">${QR.svg(restoUrl(id), 260)}</div>
+      <div class="qinvite">
+        Scannez pour voir la carte<br>
+        Scan for the menu · Escanee para ver la carta<br>
+        امسح الرمز لعرض قائمة الطعام
+      </div>
+      <div class="qband"></div>
+    </div></div>`;
+  document.body.classList.add('printing');
+  setTimeout(() => { window.print(); document.body.classList.remove('printing'); }, 120);
 }
 
 /* Ouvrir un restaurant depuis la console : on charge son identité, puis on
@@ -2004,6 +2117,14 @@ document.addEventListener('click', async e => {
   if (e.target.id === 'rlistback'){ restoList = null; return openConsole(); }
   if (e.target.id === 'rcreate') return createResto();
   if (e.target.id === 'rback')   return openConsole();
+  const cp = e.target.closest('[data-copy]');
+  if (cp) return copyText(cp.dataset.copy, cp);
+  const sh = e.target.closest('[data-share]');
+  if (sh) return shareResto(sh.dataset.share);
+  const vt = e.target.closest('[data-vitrine]');
+  if (vt) return vitrine(vt.dataset.vitrine);
+  if (e.target.id === 'vprint') return printVitrine();
+  if (e.target.id === 'vback')  return openConsole();
   const ra = e.target.closest('[data-active]');
   if (ra) return toggleActive(ra.dataset.active);
   const rc = e.target.closest('[data-resto]');
@@ -2312,6 +2433,14 @@ const QR = (() => {
 
 loadCart();
 setLang(setting('default') || CONFIG.default);
+
+/* Installation et consultation hors connexion. Enregistré après le rendu
+   pour ne pas retarder l'affichage de la carte. */
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 
 /* Chargement de la carte, une fois tout le reste en place.
    Le cache d'abord pour un affichage immédiat, puis Supabase qui fait autorité. */
