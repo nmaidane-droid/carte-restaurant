@@ -1134,7 +1134,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1150,12 +1150,16 @@ async function rpc(fn, args){
   return body;
 }
 
-/* Photos publiées. Chargées depuis photos.json à la racine du dépôt.
-   Le fichier est produit par le bouton « Télécharger photos.json » de
-   l'écran cadenas, puis déposé sur GitHub. Son absence n'est pas une
-   erreur : l'application fonctionne sans, avec les motifs d'attente. */
-let PHOTOS   = {};   // photos publiées, par identifiant de plat
-let SETTINGS = {};   // réglages publiés : numéro WhatsApp, langue de la cuisine
+/* photos.json est l'ancien emplacement, commun à tous les restaurants.
+   Il n'est plus alimenté : les photos vivent dans la carte, par restaurant.
+   On continue de le lire en dernier recours, le temps que Casa García soit
+   republié depuis le cadenas. Il pourra être supprimé du dépôt ensuite. */
+/* Les photos publiées sont portées par chaque plat, dans la base : elles sont
+   donc propres à chaque restaurant. PHOTOS reste alimenté à partir de la carte
+   reçue, pour ne rien changer au reste du code. */
+let PHOTOS   = {};   // { id : {u, c} }, reconstruit depuis la carte
+let LEGACY   = {};   // ancien photos.json, lu en dernier recours
+let SETTINGS = {};   // réglages hérités de photos.json, conservés en secours
 
 let REMOTE = null;    // réglages Supabase ; null si la base est injoignable
 
@@ -1165,7 +1169,7 @@ fetch('photos.json', { cache: 'no-store' })
     if (!j) return;
     SETTINGS = j._settings || {};
     delete j._settings;
-    PHOTOS = j;
+    LEGACY = j;
     renderMenu(); renderFoot();
   })
   .catch(() => {});
@@ -1194,6 +1198,7 @@ const MENU_CACHE = 'cg_menu:' + SUPA.resto;
 /* Les plats arrivent à plat ; on les réinsère dans la structure de catégories
    et de sous-sections, dont les intitulés restent dans ce fichier. */
 function buildMenu(rows){
+  PHOTOS = {};                       // reconstruites entièrement à chaque carte reçue
   const skel = MENU_FALLBACK.map(c => ({
     ...c, groups: c.groups.map(g => ({ ...g, dishes: [] }))
   }));
@@ -1204,6 +1209,7 @@ function buildMenu(rows){
     if (!cat) continue;
     const grp = cat.groups[r.grp];
     if (!grp) continue;
+    if (r.photo) PHOTOS[r.id] = { u: r.photo, c: r.credit || null };
     grp.dishes.push({
       id: r.id,
       n: r.name,
@@ -1304,12 +1310,14 @@ localSet = LS.get('cg_settings:' + SUPA.resto, {});   // repli si Supabase est i
 /* Ordre de résolution : édition locale → photo gravée → fichier dans photos/ */
 function photoOf(d){
   const l = live[d.id];   if (l && l.u) return l.u;
-  const b = PHOTOS[d.id]; if (b && b.u)  return b.u;
+  const b = PHOTOS[d.id]; if (b && b.u) return b.u;
+  const g = LEGACY[d.id]; if (g && g.u) return g.u;
   return d.p || null;
 }
 function creditOf(id){
-  const l = live[id]; if (l && l.c) return l.c;
+  const l = live[id];   if (l && l.c) return l.c;
   const b = PHOTOS[id]; if (b && b.c) return b.c;
+  const g = LEGACY[id]; if (g && g.c) return g.c;
   return null;
 }
 const photoDishes = () => allDishes().filter(d => d.p);
@@ -1972,6 +1980,8 @@ function openAdmin(msg){
   const key = LS.raw('cg_pexkey','');
   const n   = photoDishes().length;
   const got = photoDishes().filter(d => photoOf(d) && photoOf(d) !== d.p).length;
+  const toPublish = photoDishes().filter(d =>
+    live[d.id] || (!PHOTOS[d.id] && LEGACY[d.id])).length;
   const dup = duplicates();
   const list = admFilter === 'dupes'
              ? photoDishes().filter(d => dup.has(photoOf(d)))
@@ -1986,7 +1996,7 @@ function openAdmin(msg){
     <div class="adm-bar">
       <button class="solid" id="fill"><i>✨</i>Remplir les manquantes</button>
       <button class="${admFilter==='dupes'?'solid':''}" id="dupes"><i>⧉</i>Doublons${dup.size?' ('+dup.size+')':''}</button>
-      <button id="expo"><i>⬇</i>Télécharger photos.json</button>
+      <button class="solid" id="expo"><i>☁</i>Publier les photos</button>
       <button id="acode"><i>🔑</i>Changer mon code</button>
       <button class="warn" id="wipe"><i>🗑</i>Tout retirer</button>
     </div>
@@ -2002,7 +2012,9 @@ function openAdmin(msg){
     <div class="adm-bar">
       <button class="wide" id="rlistback"><i>←</i>Tous les restaurants</button>
     </div>` : ''}
-    <div class="adm-log" id="log">${admFilter==='dupes'
+    <div class="adm-log" id="log">${toPublish
+       ? toPublish + ' photo' + (toPublish > 1 ? 's' : '') + ' à publier · '
+       : ''}${admFilter==='dupes'
        ? (list.length ? list.length+' plats partagent une photo' : 'Aucun doublon')
        : got+' / '+n+' plats illustrés'}</div>
     <div class="adm-grid">
@@ -2093,34 +2105,35 @@ function shrink(file, cb){
   img.src = URL.createObjectURL(file);
 }
 
-function exportJSON(){
+async function exportJSON(){
+  /* On publie les choix locaux et, pour la bascule, ce qui vient encore de
+     l'ancien photos.json : une seule publication suffit à tout basculer. */
   const out = {};
   for (const d of photoDishes()){
-    const src = live[d.id] || PHOTOS[d.id];
-    if (src) out[d.id] = src;
+    const src = live[d.id] || (PHOTOS[d.id] ? null : LEGACY[d.id]);
+    if (src && src.u) out[d.id] = { u: src.u, c: src.c || null };
   }
   const n = Object.keys(out).length;
   if (!n){ $('#log').textContent = 'Aucune photo à publier.'; return; }
 
-  const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = 'photos.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  $('#log').textContent = `Publication de ${n} photos…`;
+  try {
+    const done = await rpc('resto_photos_set',
+      { p_id: SUPA.resto, p_code: adminCode, p_photos: out });
 
-  $('#admTitle').textContent = 'Fichier téléchargé';
-  $('#admBody').innerHTML = `
-    <div class="adm-log">photos.json · ${n} photos</div>
-    <ol class="steps">
-      <li>Ouvre <b>github.com/nmaidane/casa-garcia</b></li>
-      <li><b>Add file → Upload files</b></li>
-      <li>Dépose <b>photos.json</b> à la racine, à côté de index.html</li>
-      <li>Commit. Vercel redéploie tout seul en une minute.</li>
-    </ol>
-    <div class="adm-log">Pour voir ce que voient les clients, ouvre le site
-      en navigation privée : tes choix locaux n'y apparaissent pas.</div>
-    <div class="adm-bar"><button class="solid wide" id="back"><i>←</i>Retour</button></div>`;
+    /* publiées : elles vivent maintenant dans la carte, plus besoin de les
+       garder sur cet appareil, et le cache doit repartir de la base */
+    live = {}; LS.set('cg_photos:' + SUPA.resto, live);
+    try { localStorage.removeItem(MENU_CACHE); } catch {}
+    const rows = await rpc('resto_menu', { p_id: SUPA.resto });
+    if (Array.isArray(rows)){
+      applyMenu(rows, 'Supabase');
+      LS.set(MENU_CACHE, { at: Date.now(), rows });
+    }
+    openAdmin(`${done} photos publiées. Elles sont visibles par tous les clients.`);
+  } catch(e){
+    $('#log').textContent = e.message;
+  }
 }
 
 /* ---------- interactions de l'administration ---------- */
