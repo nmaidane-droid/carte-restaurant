@@ -199,12 +199,18 @@ textarea{min-height:74px;resize:vertical}
 .tbl-add button{flex:none;min-height:44px;border:1.5px solid var(--cobalt);
   background:var(--cobalt);color:#fff;border-radius:10px;padding:0 18px;font-weight:600}
 /* ---------- disponibilité des plats ---------- */
-.dtabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin:10px 0 4px}
-.dtabs::-webkit-scrollbar{display:none}
-.dtab{flex:none;white-space:nowrap;border:1px solid var(--sand);border-radius:999px;
-  padding:8px 14px;font-size:13.5px;color:var(--ink-soft);background:#fff}
+.dtabs{display:flex;align-items:stretch;gap:6px;margin:10px 0 8px}
+.dtab{flex:1 1 0;min-width:0;min-height:40px;display:flex;align-items:center;
+  justify-content:center;text-align:center;white-space:normal;line-height:1.15;
+  border:1px solid var(--sand);border-radius:14px;padding:6px 4px;
+  font-size:clamp(11.5px,3.2vw,13.5px);color:var(--ink-soft);background:#fff}
 .dtab.on{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
-.dtab.off-tab.on{background:#B3261E;border-color:#B3261E}
+/* L'onglet des plats coupés ne peut pas se cacher au bout d'une rangée
+   qui défile : il occupe sa propre ligne, et n'apparaît que s'il sert. */
+.dtab-off{width:100%;min-height:44px;display:flex;align-items:center;justify-content:center;
+  gap:8px;margin-bottom:10px;border:1.5px solid #E3C9C6;border-radius:12px;
+  background:#fff;color:#B3261E;font-size:14px;font-weight:600}
+.dtab-off.on{background:#B3261E;border-color:#B3261E;color:#fff}
 .drow{display:flex;align-items:center;gap:11px;padding:11px 0;
   border-bottom:1px solid var(--chaux-2)}
 .drow:last-child{border-bottom:0}
@@ -979,7 +985,7 @@ document.addEventListener('keydown', e => {
 --------------------------------------------------------------------------- */
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: 'casa-garcia'
 };
 
@@ -1438,6 +1444,9 @@ function grpLabel(cat, grp){
 
 function renderDispo(msg){
   const off = allDishesAdm.filter(d => d.hidden);
+  /* le bouton disparaît quand il n'y a plus rien de coupé : ne pas rester
+     sur un onglet devenu invisible */
+  if (dispoTab === 'off' && !off.length) dispoTab = MENU_FALLBACK[0].id;
   const rows = dispoTab === 'off'
     ? off
     : allDishesAdm.filter(d => d.cat === dispoTab);
@@ -1468,12 +1477,13 @@ function renderDispo(msg){
       ${MENU_FALLBACK.map(c =>
         `<button class="dtab ${dispoTab === c.id ? 'on' : ''}" data-dtab="${c.id}">
            ${esc(c.cat.fr)}</button>`).join('')}
-      <button class="dtab off-tab ${dispoTab === 'off' ? 'on' : ''}" data-dtab="off">
-        Indisponibles${off.length ? ' (' + off.length + ')' : ''}</button>
     </div>
-    <div class="adm-log">${off.length
-      ? off.length + (off.length > 1 ? ' plats retirés de la carte' : ' plat retiré de la carte')
-      : 'Toute la carte est disponible.'}</div>
+    ${off.length
+      ? `<button class="dtab-off ${dispoTab === 'off' ? 'on' : ''}" data-dtab="off">
+           <span>⚠</span>${off.length > 1
+             ? off.length + ' plats retirés de la carte'
+             : '1 plat retiré de la carte'}</button>`
+      : `<div class="adm-log">Toute la carte est disponible.</div>`}
     ${body}
     <div class="adm-bar"><button class="wide" id="gback"><i>←</i>Retour aux paramètres</button></div>`;
 }
