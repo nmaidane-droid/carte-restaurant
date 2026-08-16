@@ -97,9 +97,13 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
   transition:background .15s,color .15s,transform .15s}
 .plus:hover{background:var(--cobalt);color:var(--chaux)}
 .plus.hit{background:var(--ochre);border-color:var(--ochre);color:#231703;transform:scale(.88)}
-.badge{position:absolute;top:-5px;inset-inline-end:-5px;background:var(--cobalt);color:var(--chaux);
-  font-family:var(--mono);font-size:11px;min-width:19px;height:19px;border-radius:999px;
-  display:flex;align-items:center;justify-content:center;padding:0 4px}
+.stepper{flex:none;display:flex;align-items:center;border:1.5px solid var(--cobalt);
+  border-radius:999px;padding:2px}
+.stepper button{width:31px;height:31px;border-radius:50%;color:var(--cobalt);font-size:19px;
+  line-height:1;display:flex;align-items:center;justify-content:center}
+.stepper button:active{background:var(--cobalt);color:var(--chaux)}
+.stepper .q{font-family:var(--mono);font-size:14px;min-width:20px;text-align:center;
+  color:var(--cobalt-deep)}
 /* formats bouteille (3/4 · 1/2) */
 .vars{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
 .var{border:1.5px solid var(--cobalt);border-radius:7px;padding:5px 11px;font-size:13px;
@@ -140,8 +144,9 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
 .row .nm{flex:1;font-weight:600;font-size:15px}
 .row .nm i{display:block;font-style:normal;font-weight:400;font-size:12.5px;color:var(--ochre)}
 .row .pr{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft)}
-.step{width:30px;height:30px;border:1px solid var(--sand);border-radius:50%;background:#fff;
+.step{width:30px;height:30px;flex:none;border:1px solid var(--sand);border-radius:50%;background:#fff;
   display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1}
+.step.kill{border-color:#E3C9C6;color:#B3261E;font-size:13px;margin-inline-start:2px}
 .n{font-family:var(--mono);min-width:20px;text-align:center}
 .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;
   padding-top:14px;border-top:2px solid var(--cobalt)}
@@ -509,6 +514,7 @@ const UI = {
  sendHint:L(["La commande s'ouvre dans WhatsApp. Vérifiez-la avant d'envoyer.",'The order opens in WhatsApp. Check it before sending.','El pedido se abre en WhatsApp. Revíselo antes de enviarlo.',"L'ordine si apre in WhatsApp. Controllalo prima di inviare.",'De bestelling opent in WhatsApp. Controleer voor het versturen.','Die Bestellung öffnet sich in WhatsApp. Bitte vor dem Senden prüfen.','ההזמנה תיפתח בוואטסאפ. בדקו לפני השליחה.','注文内容がWhatsAppで開きます。送信前にご確認ください。','订单将在 WhatsApp 中打开，发送前请确认。']),
  back:L(['Retour à la carte','Back to menu','Volver a la carta','Torna al menu','Terug naar de kaart','Zurück zur Karte','חזרה לתפריט','メニューに戻る','返回菜单']),
  view:L(['Voir','View','Ver','Vedi','Bekijken','Ansehen','הצג','確認','查看']),
+ remove:L(['Retirer','Remove','Quitar','Rimuovi','Verwijderen','Entfernen','הסר','削除','移除']),
  addTo:L(['Ajouter','Add','Añadir','Aggiungi','Toevoegen','Hinzufügen','הוסף','追加','添加']),
  mkNote:L(['Certains articles sont facturés au poids ou selon le marché. Le serveur vous confirmera le prix.','Some items are priced by weight or at market price. Your waiter will confirm.','Algunos artículos se cobran al peso o según mercado. El camarero se lo confirmará.','Alcuni articoli sono a peso o secondo mercato. Il cameriere confermerà il prezzo.','Sommige gerechten worden per gewicht of tegen dagprijs berekend. De ober bevestigt de prijs.','Einige Artikel werden nach Gewicht oder zum Tagespreis berechnet. Der Kellner bestätigt den Preis.','חלק מהפריטים מתומחרים לפי משקל או מחיר שוק. המלצר יאשר את המחיר.','一部の品は量り売りまたは時価です。価格は係員がご案内します。','部分菜品按重量或时价计费，服务员将为您确认价格。']),
  arrival:L(['Selon arrivage','Subject to the catch','Según llegada','Secondo il pescato','Afhankelijk van de aanvoer','Je nach Fang','לפי הדיג היומי','入荷次第','视当日进货']),
@@ -609,9 +615,15 @@ function dishHTML(d, withPic){
                    <b>${money(pr)}</b>${q ? `<span class="vq">${q}</span>` : ''}</button>`;
        }).join('')}</div>`
     : '';
-  const plus = d.v ? '' : `<div class="wrapq">
-        <button class="plus" data-add="${d.id}" aria-label="${t('addTo')} — ${nameOf(d)}">+</button>
-        ${qty ? `<span class="badge">${qty}</span>` : ''}</div>`;
+  const plus = d.v ? '' : (qty
+    ? `<div class="stepper">
+         <button data-dec="${d.id}" aria-label="−">−</button>
+         <span class="q">${qty}</span>
+         <button data-add="${d.id}" aria-label="+">+</button>
+       </div>`
+    : `<div class="wrapq">
+         <button class="plus" data-add="${d.id}" aria-label="${t('addTo')} — ${nameOf(d)}">+</button>
+       </div>`);
   return `<div class="dish">
     ${thumb}
     <div class="body">
@@ -666,6 +678,7 @@ function renderCart(){
         <button class="step" data-dec="${key}">−</button>
         <span class="n">${cart[key]}</span>
         <button class="step" data-inc="${key}">+</button>
+        <button class="step kill" data-del="${key}" aria-label="${t('remove')}">✕</button>
       </div>`;}).join('')}
     <div class="tot"><b>${t('total')}</b><span>${money(total())}${hasMarket()?' +':''}</span></div>
     ${hasMarket() ? `<div class="mknote">${t('mkNote')}</div>` : ''}
@@ -713,7 +726,7 @@ function buildMessage(){
 
 /* ---------- interactions ---------- */
 document.addEventListener('click', e => {
-  const el = e.target.closest('[data-add],[data-inc],[data-dec],[data-go],[data-lang],[data-close]');
+  const el = e.target.closest('[data-add],[data-inc],[data-dec],[data-del],[data-go],[data-lang],[data-close]');
   if(el){
     if(el.dataset.add){
       const k = el.dataset.add;
@@ -725,6 +738,10 @@ document.addEventListener('click', e => {
     if(el.dataset.dec){
       const k = el.dataset.dec;
       if(--cart[k] <= 0) delete cart[k];
+      renderCart(); renderBar(); renderMenu(); return;
+    }
+    if(el.dataset.del){
+      delete cart[el.dataset.del];
       renderCart(); renderBar(); renderMenu(); return;
     }
     if(el.dataset.go){
