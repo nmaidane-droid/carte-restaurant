@@ -76,6 +76,8 @@ nav::-webkit-scrollbar{display:none}
 
 main{padding:0 var(--pad)}
 section{padding:34px 0 6px;scroll-margin-top:58px}
+.nomenu{text-align:center;color:var(--ink-soft);font-size:15px;line-height:1.6;
+  padding:60px 20px}
 .cat{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
   border-bottom:2px solid var(--cobalt);padding-bottom:9px}
 .cat h2{font-family:var(--display);font-weight:600;font-size:clamp(25px,6.5vw,34px);letter-spacing:-.02em}
@@ -206,11 +208,13 @@ textarea{min-height:74px;resize:vertical}
   background:var(--cobalt);color:#fff;border-radius:10px;padding:0 18px;font-weight:600}
 /* ---------- console : liste des restaurants ---------- */
 .rlist{margin:12px 0 4px}
-.rcard{display:flex;align-items:center;gap:12px;width:100%;text-align:start;
-  border:1px solid var(--sand);border-radius:12px;background:#fff;
-  padding:13px 14px;margin-bottom:9px}
-.rcard:hover{border-color:var(--cobalt)}
-.rcard.off{opacity:.55}
+/* Un seul cadre par restaurant : identité, adresse et actions ensemble. */
+.rbox{border:1px solid var(--sand);border-radius:13px;background:#fff;
+  overflow:hidden;margin-bottom:11px}
+.rbox.off{opacity:.55}
+.rcard{display:flex;align-items:center;gap:10px;width:100%;text-align:start;
+  background:none;padding:13px 14px 11px}
+.rcard:active{background:var(--chaux-2)}
 .rcard .ri{flex:1;min-width:0}
 .rcard b{display:block;font-size:16px;line-height:1.25}
 .rcard span{display:block;font-family:var(--mono);font-size:11.5px;
@@ -220,14 +224,15 @@ textarea{min-height:74px;resize:vertical}
   border-radius:4px;padding:3px 7px}
 .rbadge.warn{background:#FBEDEB;color:#B3261E}
 .rbadge.new{background:#EAF2FF;color:var(--cobalt)}
-.rurl{display:flex;align-items:center;gap:7px;margin:-4px 0 12px;padding:9px 11px;
-  border:1px solid var(--chaux-2);border-radius:10px;background:#FAFBFC}
-.rurl code{flex:1;min-width:0;font-family:var(--mono);font-size:11.5px;color:var(--cobalt-deep);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rurl button{width:32px;height:32px;flex:none;border-radius:8px;border:1px solid var(--sand);
-  background:#fff;font-size:14px;line-height:1;
-  display:flex;align-items:center;justify-content:center}
-.rurl button:hover{border-color:var(--cobalt)}
+.rurl{border-top:1px solid var(--chaux-2);background:#FAFBFC;padding:10px 14px 12px}
+.rurl code{display:block;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:9px}
+.racts{display:flex;gap:7px}
+.racts button{flex:1 1 0;min-width:0;min-height:36px;border:1px solid var(--sand);
+  border-radius:9px;background:#fff;font-size:12.5px;color:var(--cobalt-deep);
+  display:flex;align-items:center;justify-content:center;gap:5px}
+.racts button:hover{border-color:var(--cobalt)}
+.racts button i{font-style:normal;font-size:13px;opacity:.8}
 .qrbox{text-align:center;padding:18px 0 6px}
 .qrbox svg{display:block;margin:0 auto;border:1px solid var(--sand);border-radius:12px}
 .qrbox .qn{font-family:var(--display);font-size:19px;margin-top:12px}
@@ -700,6 +705,7 @@ const UI = {
  sendHint:L(["La commande s'ouvre dans WhatsApp. Vérifiez-la avant d'envoyer.",'The order opens in WhatsApp. Check it before sending.','El pedido se abre en WhatsApp. Revíselo antes de enviarlo.',"L'ordine si apre in WhatsApp. Controllalo prima di inviare.",'De bestelling opent in WhatsApp. Controleer voor het versturen.','Die Bestellung öffnet sich in WhatsApp. Bitte vor dem Senden prüfen.','ההזמנה תיפתח בוואטסאפ. בדקו לפני השליחה.','注文内容がWhatsAppで開きます。送信前にご確認ください。','订单将在 WhatsApp 中打开，发送前请确认。']),
  back:L(['Retour à la carte','Back to menu','Volver a la carta','Torna al menu','Terug naar de kaart','Zurück zur Karte','חזרה לתפריט','メニューに戻る','返回菜单']),
  view:L(['Voir','View','Ver','Vedi','Bekijken','Ansehen','הצג','確認','查看']),
+ noMenu:L(['La carte est en cours de préparation.','The menu is being prepared.','La carta está en preparación.','Il menu è in preparazione.','De kaart wordt voorbereid.','Die Karte wird gerade erstellt.','התפריט בהכנה.','メニューを準備中です。','菜单正在准备中。']),
  remove:L(['Retirer','Remove','Quitar','Rimuovi','Verwijderen','Entfernen','הסר','削除','移除']),
  addTo:L(['Ajouter','Add','Añadir','Aggiungi','Toevoegen','Hinzufügen','הוסף','追加','添加']),
  mkNote:L(['Certains articles sont facturés au poids ou selon le marché. Le serveur vous confirmera le prix.','Some items are priced by weight or at market price. Your waiter will confirm.','Algunos artículos se cobran al peso o según mercado. El camarero se lo confirmará.','Alcuni articoli sono a peso o secondo mercato. Il cameriere confermerà il prezzo.','Sommige gerechten worden per gewicht of tegen dagprijs berekend. De ober bevestigt de prijs.','Einige Artikel werden nach Gewicht oder zum Tagespreis berechnet. Der Kellner bestätigt den Preis.','חלק מהפריטים מתומחרים לפי משקל או מחיר שוק. המלצר יאשר את המחיר.','一部の品は量り売りまたは時価です。価格は係員がご案内します。','部分菜品按重量或时价计费，服务员将为您确认价格。']),
@@ -904,6 +910,10 @@ function dishHTML(d, withPic){
 }
 
 function renderMenu(){
+  if (!MENU.length){
+    $('#menu').innerHTML = `<div class="nomenu">${t('noMenu')}</div>`;
+    return;
+  }
   $('#menu').innerHTML = MENU.filter(c => c.id === activeCat).map(c => `
     <section id="sec-${c.id}">
       <div class="cat"><h2>${c.cat[lang]||c.cat.fr}</h2>${CONFIG.showEsCat?`<span>${c.esCat}</span>`:''}</div>
@@ -1124,7 +1134,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1207,7 +1217,10 @@ function buildMenu(rows){
     });
     placed++;
   }
-  if (!placed) throw new Error('carte vide');
+  /* Une carte sans plat est une réponse légitime : un restaurant qui vient
+     d'être créé, ou dont tout est indisponible. Ce n'est pas une panne, et
+     il ne faut surtout pas retomber sur la carte de secours — sinon un
+     établissement afficherait les plats d'un autre. */
   /* une sous-section entièrement masquée ne doit pas laisser un titre orphelin */
   for (const c of skel) c.groups = c.groups.filter(g => g.dishes.length);
   return skel.filter(c => c.groups.length);
@@ -1216,7 +1229,7 @@ function buildMenu(rows){
 function applyMenu(rows, source){
   try {
     MENU = buildMenu(rows);
-    if (!MENU.some(c => c.id === activeCat)) activeCat = MENU[0].id;
+    if (!MENU.some(c => c.id === activeCat)) activeCat = MENU.length ? MENU[0].id : null;
     loadCart();          // les plats du panier doivent exister dans la carte reçue
     renderChips(); renderMenu(); renderBar(); renderFoot();
   } catch (e) {
@@ -1727,22 +1740,26 @@ async function openConsole(msg){
     <div class="adm-log">${restoList.length} établissement${restoList.length > 1 ? 's' : ''}</div>
     <div class="rlist">
       ${restoList.map(r => `
-        <button class="rcard ${r.active ? '' : 'off'}" data-resto="${esc(r.id)}">
-          <span class="ri">
-            <b>${esc(r.name || r.id)}</b>
-            <span>${esc(r.id)} · ${r.dishes} plat${r.dishes > 1 ? 's' : ''}${
-              r.hidden_dishes ? ' · ' + r.hidden_dishes + ' retiré' + (r.hidden_dishes > 1 ? 's' : '') : ''
-            } · ${r.tables} table${r.tables > 1 ? 's' : ''}</span>
-          </span>
-          ${!r.active ? '<span class="rbadge warn">suspendu</span>' : ''}
-          ${!r.owner_set ? '<span class="rbadge new">non activé</span>' : ''}
-          <span class="rgo">→</span>
-        </button>
-        <div class="rurl">
-          <code>${esc(restoUrl(r.id).replace(/^https?:\/\//, ''))}</code>
-          <button data-copy="${esc(restoUrl(r.id))}" title="Copier l'adresse">⧉</button>
-          <button data-share="${esc(r.id)}" title="Envoyer au restaurateur">↗</button>
-          <button data-vitrine="${esc(r.id)}" title="QR code pour la vitrine">▦</button>
+        <div class="rbox ${r.active ? '' : 'off'}">
+          <button class="rcard" data-resto="${esc(r.id)}">
+            <span class="ri">
+              <b>${esc(r.name || r.id)}</b>
+              <span>${esc(r.id)} · ${r.dishes} plat${r.dishes > 1 ? 's' : ''}${
+                r.hidden_dishes ? ' · ' + r.hidden_dishes + ' retiré' + (r.hidden_dishes > 1 ? 's' : '') : ''
+              } · ${r.tables} table${r.tables > 1 ? 's' : ''}</span>
+            </span>
+            ${!r.active ? '<span class="rbadge warn">suspendu</span>' : ''}
+            ${!r.owner_set ? '<span class="rbadge new">non activé</span>' : ''}
+            <span class="rgo">→</span>
+          </button>
+          <div class="rurl">
+            <code>${esc(restoUrl(r.id).replace(/^https?:\/\//, ''))}</code>
+            <div class="racts">
+              <button data-copy="${esc(restoUrl(r.id))}"><i>⧉</i>Copier</button>
+              <button data-share="${esc(r.id)}"><i>↗</i>Envoyer</button>
+              <button data-vitrine="${esc(r.id)}"><i>▦</i>QR code</button>
+            </div>
+          </div>
         </div>`).join('')}
     </div>
     <div class="adm-bar">
@@ -2446,12 +2463,12 @@ if ('serviceWorker' in navigator){
    Le cache d'abord pour un affichage immédiat, puis Supabase qui fait autorité. */
 try {
   const c = LS.get(MENU_CACHE, null);
-  if (c && Array.isArray(c.rows) && c.rows.length) applyMenu(c.rows, 'en cache');
+  if (c && Array.isArray(c.rows)) applyMenu(c.rows, 'en cache');
 } catch {}
 
 rpc('resto_menu', { p_id: SUPA.resto })
   .then(rows => {
-    if (!Array.isArray(rows) || !rows.length) return;
+    if (!Array.isArray(rows)) return;      // une liste vide reste une réponse valable
     applyMenu(rows, 'Supabase');
     LS.set(MENU_CACHE, { at: Date.now(), rows });
   })
