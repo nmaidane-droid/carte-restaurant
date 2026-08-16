@@ -161,7 +161,7 @@ section{padding:34px 0 6px;scroll-margin-top:58px}
 label{display:block;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-soft);margin:15px 0 6px}
 label .lc{text-transform:none;letter-spacing:0}
-input,textarea{width:100%;font:inherit;background:#fff;border:1px solid var(--sand);
+input,textarea,select{width:100%;font:inherit;background:#fff;border:1px solid var(--sand);
   border-radius:8px;padding:11px 13px;color:var(--ink)}
 textarea{min-height:74px;resize:vertical}
 .send{width:100%;margin-top:20px;background:#25D366;color:#04310f;font-weight:600;
@@ -179,6 +179,7 @@ textarea{min-height:74px;resize:vertical}
 .adm-bar button.solid{background:var(--cobalt);color:var(--chaux)}
 .adm-bar button.warn{border-color:#B3261E;color:#B3261E}
 .adm-log{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);min-height:20px;margin-bottom:10px}
+.linkish{font-family:var(--mono);font-size:12.5px;color:var(--cobalt);text-decoration:underline}
 .adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .adm-cell{text-align:center;display:flex;flex-direction:column}
 .adm-cell .sq{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--sand);
@@ -710,13 +711,13 @@ function renderCart(){
    La carte papier de Casa García est trilingue (es / fr / en), donc ces trois
    langues sont comprises en salle comme en cuisine. */
 function buildMessage(){
-  const K = CONFIG.orderLang;
+  const K = orderLang();
   const kitchen = d => d.n[K] || d.n.fr;
   const lbl = {
     es:{h:'Nuevo pedido',t:'Mesa',n:'Nombre',s:'Total',r:'Comentario',g:'Idioma del cliente',m:'(precio a confirmar)',a:'(disp. a confirmar)'},
     fr:{h:'Nouvelle commande',t:'Table',n:'Nom',s:'Total',r:'Remarque',g:'Langue du client',m:'(prix à confirmer)',a:'(dispo à confirmer)'},
     en:{h:'New order',t:'Table',n:'Name',s:'Total',r:'Note',g:'Guest language',m:'(price to confirm)',a:'(availability to confirm)'}
-  }[CONFIG.orderLang] || {h:'Nouvelle commande',t:'Table',n:'Nom',s:'Total',r:'Remarque',g:'Langue du client',m:'(prix à confirmer)',a:'(dispo à confirmer)'};
+  }[K] || {h:'Nouvelle commande',t:'Table',n:'Nom',s:'Total',r:'Remarque',g:'Langue du client',m:'(prix à confirmer)',a:'(dispo à confirmer)'};
 
   const tbl = ($('#tbl')?.value || '').trim();
   const who = ($('#who')?.value || '').trim();
@@ -772,7 +773,9 @@ document.addEventListener('click', e => {
     }
   }
   if(e.target.id === 'send'){
-    window.open('https://wa.me/' + CONFIG.whatsapp + '?text=' + encodeURIComponent(buildMessage()), '_blank');
+    const num = waNumber();
+    if (num.length < 8){ alert('Numéro WhatsApp non configuré.'); return; }
+    window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(buildMessage()), '_blank');
   }
 });
 
@@ -798,11 +801,27 @@ const PIN_HASH = 'c27930584abbf709a1858e7e75ec8e0e579cffd2d56c36142f15190a4df3a4
    Le fichier est produit par le bouton « Télécharger photos.json » de
    l'écran cadenas, puis déposé sur GitHub. Son absence n'est pas une
    erreur : l'application fonctionne sans, avec les motifs d'attente. */
-let PHOTOS = {};
+let PHOTOS   = {};   // photos publiées, par identifiant de plat
+let SETTINGS = {};   // réglages publiés : numéro WhatsApp, langue de la cuisine
+
 fetch('photos.json', { cache: 'no-store' })
   .then(r => r.ok ? r.json() : null)
-  .then(j => { if (j) { PHOTOS = j; renderMenu(); renderFoot(); } })
+  .then(j => {
+    if (!j) return;
+    SETTINGS = j._settings || {};
+    delete j._settings;
+    PHOTOS = j;
+    renderMenu(); renderFoot();
+  })
   .catch(() => {});
+
+/* Trois niveaux, du moins au plus prioritaire :
+   valeur du fichier → réglages publiés → réglages locaux (pour tester
+   avant publication). Ce dernier niveau ne concerne que cet appareil. */
+let localSet = {};
+const setting = k => (localSet[k] ?? SETTINGS[k] ?? CONFIG[k]);
+const waNumber  = () => String(setting('whatsapp')).replace(/\D/g, '');
+const orderLang = () => setting('orderLang');
 
 /* Requêtes Pexels par plat. En anglais et en espagnol : le français ne
    donne presque rien. Modifiables ici si un résultat tombe à côté. */
@@ -836,7 +855,8 @@ const LS = {
   raw(k, d){ try { return localStorage.getItem(k) || d; } catch { return d; } },
   rawSet(k, v){ try { localStorage.setItem(k, v); } catch {} }
 };
-let live = LS.get('cg_photos', {});          // { id: {u:url, c:'photographe'} }
+let live = LS.get('cg_photos', {});
+localSet = LS.get('cg_settings', {});          // { id: {u:url, c:'photographe'} }
 
 /* Ordre de résolution : édition locale → photo gravée → fichier dans photos/ */
 function photoOf(d){
@@ -899,9 +919,29 @@ function openAdmin(){
   const list = admFilter === 'dupes'
              ? photoDishes().filter(d => dup.has(photoOf(d)))
              : photoDishes();
+  const num = waNumber();
+  const src = localSet.whatsapp ? 'local, non publié'
+            : SETTINGS.whatsapp ? 'publié'
+            : 'valeur du fichier';
   $('#admBody').innerHTML = `
+    <label for="wa">Numéro WhatsApp du restaurant
+      <span class="lc">(format international, sans + ni espaces)</span></label>
+    <input id="wa" inputmode="numeric" value="${num}" placeholder="212661234567" autocomplete="off">
+    <div class="adm-log" id="setlog">Actuellement : ${src}${
+      localSet.whatsapp || localSet.orderLang
+        ? ' · <button class="linkish" id="reset">revenir aux valeurs publiées</button>' : ''}</div>
+
+    <label for="ol">Langue reçue par la cuisine</label>
+    <select id="ol">
+      ${[['fr','Français'],['es','Español'],['en','English']].map(([v,n]) =>
+        `<option value="${v}" ${orderLang()===v?'selected':''}>${n}</option>`).join('')}
+    </select>
+
     <label for="pk">Clé API Pexels <span class="lc">(reste sur cet appareil)</span></label>
     <input id="pk" value="${key}" placeholder="Colle ta clé ici" autocomplete="off" spellcheck="false">
+    <div class="adm-log">${key
+      ? 'Sert uniquement à chercher de nouvelles photos. Les photos déjà publiées s\'affichent sans elle.'
+      : 'Sans clé, la recherche de photos est indisponible. Les photos déjà publiées restent visibles par les clients. Clé gratuite sur pexels.com/api'}</div>
     <div class="adm-bar">
       <button class="solid" id="fill">Remplir les manquantes</button>
       <button class="${admFilter==='dupes'?'solid':''}" id="dupes">Doublons${dup.size?' ('+dup.size+')':''}</button>
@@ -928,6 +968,20 @@ function openAdmin(){
     <input type="file" accept="image/*" capture="environment" id="camIn" hidden>
     <button class="close" data-close>Fermer</button>`;
   $('#pk').addEventListener('change', e => LS.rawSet('cg_pexkey', e.target.value.trim()));
+  $('#wa').addEventListener('change', e => {
+    const v = e.target.value.replace(/\D/g, '');
+    if (v.length < 8){
+      /* on ne remplace jamais un numéro valide par un numéro vide ou tronqué */
+      e.target.value = waNumber();
+      $('#setlog').textContent = 'Numéro trop court, non enregistré. Format : 212661234567';
+      return;
+    }
+    localSet.whatsapp = v; LS.set('cg_settings', localSet);
+    openAdmin();
+  });
+  $('#ol').addEventListener('change', e => {
+    localSet.orderLang = e.target.value; LS.set('cg_settings', localSet);
+  });
 }
 
 const pexKey = () => LS.raw('cg_pexkey','').trim();
@@ -1007,7 +1061,14 @@ function exportJSON(){
     if (src) out[d.id] = src;
   }
   const n = Object.keys(out).length;
-  if (!n){ $('#log').textContent = 'Aucune photo à publier.'; return; }
+  if (waNumber().length < 8){
+    $('#log').textContent = 'Numéro WhatsApp invalide : publication annulée.';
+    return;
+  }
+  out._settings = {
+    whatsapp:  waNumber(),
+    orderLang: orderLang()
+  };
 
   const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -1018,7 +1079,7 @@ function exportJSON(){
 
   $('#admTitle').textContent = 'Fichier téléchargé';
   $('#admBody').innerHTML = `
-    <div class="adm-log">photos.json · ${n} photos</div>
+    <div class="adm-log">photos.json · ${n} photos · WhatsApp ${out._settings.whatsapp}</div>
     <ol class="steps">
       <li>Ouvre <b>github.com/nmaidane/casa-garcia</b></li>
       <li><b>Add file → Upload files</b></li>
@@ -1057,6 +1118,10 @@ document.addEventListener('click', async e => {
   if (e.target.id === 'fill') return fillAll();
   if (e.target.id === 'go')   return runPick();
   if (e.target.id === 'back') return openAdmin();
+  if (e.target.id === 'reset'){
+    localSet = {}; LS.set('cg_settings', localSet);
+    return openAdmin();
+  }
   if (e.target.id === 'dupes'){
     admFilter = admFilter === 'dupes' ? 'all' : 'dupes';
     return openAdmin();
