@@ -694,22 +694,23 @@ const TABLE = (new URLSearchParams(location.search).get('t') || '').trim().slice
    La clé porte le numéro de table : deux tables ne se mélangent jamais.
    Le panier est effacé dès l'envoi de la commande — c'est le vrai signal de fin.
 --------------------------------------------------------------------------- */
-const CART_KEY = 'cg_cart:' + SUPA.resto + ':' + (TABLE || '-');
+/* Calculée à l'usage : SUPA est déclaré plus bas dans le fichier. */
+const cartKey = () => 'cg_cart:' + SUPA.resto + ':' + (TABLE || '-');
 const CART_TTL = 30 * 60 * 1000;
 
 function saveCart(){
   try {
-    if (!Object.keys(cart).length) localStorage.removeItem(CART_KEY);
-    else localStorage.setItem(CART_KEY, JSON.stringify({ at: Date.now(), cart }));
+    if (!Object.keys(cart).length) localStorage.removeItem(cartKey());
+    else localStorage.setItem(cartKey(), JSON.stringify({ at: Date.now(), cart }));
   } catch {}
 }
 function loadCart(){
   try {
-    const raw = localStorage.getItem(CART_KEY);
+    const raw = localStorage.getItem(cartKey());
     if (!raw) return;
     const v = JSON.parse(raw);
     if (!v || !v.cart || Date.now() - v.at > CART_TTL){
-      localStorage.removeItem(CART_KEY);
+      localStorage.removeItem(cartKey());
       return;
     }
     /* un plat coupé ou retiré de la carte entre-temps est simplement ignoré */
@@ -720,7 +721,7 @@ function loadCart(){
 }
 function clearCart(){
   cart = {};
-  try { localStorage.removeItem(CART_KEY); } catch {}
+  try { localStorage.removeItem(cartKey()); } catch {}
 }
 
 let lang = CONFIG.default;
@@ -1068,7 +1069,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
