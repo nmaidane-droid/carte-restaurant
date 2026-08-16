@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/photos.json", "destination": "/photos.json" },
+    { "source": "/photos/:file", "destination": "/photos/:file" },
+    { "source": "/:resto", "destination": "/index.html" }
+  ]
+}
