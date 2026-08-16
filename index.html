@@ -269,6 +269,17 @@ textarea{min-height:74px;resize:vertical}
   color:var(--ink-soft);margin-top:2px}
 .drow.off .dn{color:var(--ink-soft);text-decoration:line-through}
 .drow.off .dn i{text-decoration:none}
+.pfield{display:flex;align-items:center;gap:5px;flex:none}
+.pvars{display:flex;flex-direction:column;gap:5px;flex:none}
+.pfield b{font-family:var(--mono);font-weight:500;font-size:11.5px;
+  color:var(--ink-soft);min-width:22px;text-align:end}
+.pfield input{width:66px;padding:7px 8px;text-align:end;font-family:var(--mono);
+  font-size:14px;border-radius:8px}
+.pfield input:focus{border-color:var(--cobalt);outline:none}
+.pfield .cur{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+.pfield.saved input{border-color:#2E7D32;background:#F2F9F3}
+.pfree{flex:none;font-family:var(--mono);font-size:12px;color:var(--ochre);
+  min-width:66px;text-align:end}
 .sw{width:52px;height:30px;flex:none;border-radius:999px;background:var(--sand);
   position:relative;transition:background .18s}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;
@@ -1197,7 +1208,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1514,9 +1525,9 @@ function gearPanel(msg){
       <button class="solid wide" id="qrall"><i>🖨</i>Imprimer toutes les tables</button>
     </div>
 
-    <label>Disponibilité des plats</label>
+    <label>Carte du restaurant</label>
     <div class="adm-bar">
-      <button class="wide" id="dispo"><i>🍽</i>Gérer les plats disponibles</button>
+      <button class="wide" id="dispo"><i>🍽</i>Plats et prix</button>
     </div>
     <div class="adm-log" id="tlog"></div>`;
 }
@@ -1635,7 +1646,7 @@ let allDishesAdm = null;    // carte complète, plats éteints compris
 let dispoTab = null;        // catégorie affichée, ou 'off'
 
 async function openDispo(msg){
-  $('#admTitle').textContent = 'Plats disponibles';
+  $('#admTitle').textContent = 'Plats et prix';
   if (!allDishesAdm){
     $('#admBody').innerHTML = '<div class="adm-log">Chargement de la carte…</div>';
     try {
@@ -1676,11 +1687,30 @@ function renderDispo(msg){
   for (const d of rows){
     const g = dispoTab === 'off' ? catLabel(d.cat) : grpLabel(d.cat, d.grp);
     if (g && g !== lastGrp){ body += `<div class="dgrp">${esc(g)}</div>`; lastGrp = g; }
-    const price = d.price != null
-      ? d.price + ' ' + setting('currency')
-      : (d.mention ? (d.mention.fr || '') : '');
+    /* Prix fixe : modifiable directement. Prix au poids ou formats de
+       bouteille : affichés seulement, ils se règlent autrement. */
+    let priceCell;
+    if (d.variants){
+      /* Une bouteille est un article comme un autre : chaque format a son prix,
+         modifiable séparément. Un vin est souvent la ligne la plus chère. */
+      priceCell = `<span class="pvars">${d.variants.map(v => `
+        <span class="pfield">
+          <b>${esc(v[0])}</b>
+          <input inputmode="decimal" value="${v[1]}"
+            data-vprice="${esc(d.id)}" data-vfmt="${esc(v[0])}"
+            aria-label="Prix ${esc(v[0])} de ${esc(d.name.fr)}">
+        </span>`).join('')}</span>`;
+    } else if (d.price == null){
+      priceCell = `<span class="pfree">${esc(d.mention ? (d.mention.fr || '—') : '—')}</span>`;
+    } else {
+      priceCell = `<span class="pfield">
+        <input inputmode="decimal" value="${d.price}" data-price="${esc(d.id)}"
+          aria-label="Prix de ${esc(d.name.fr)}">
+        <span class="cur">${esc(setting('currency'))}</span></span>`;
+    }
     body += `<div class="drow ${d.hidden ? 'off' : ''}">
-      <span class="dn">${esc(d.name.fr)}<i>${esc(price)}</i></span>
+      <span class="dn">${esc(d.name.fr)}</span>
+      ${priceCell}
       <button class="sw ${d.hidden ? '' : 'on'}" data-dish="${esc(d.id)}"
         aria-label="${d.hidden ? 'Rendre disponible' : 'Rendre indisponible'}"></button>
     </div>`;
@@ -1706,6 +1736,71 @@ function renderDispo(msg){
       : `<div class="adm-log">Toute la carte est disponible.</div>`}
     ${body}
     <div class="adm-bar"><button class="wide" id="gback"><i>←</i>Retour aux paramètres</button></div>`;
+}
+
+/* Le prix s'enregistre quand le champ perd le focus, pas à chaque frappe :
+   sinon on écrirait en base à chaque chiffre tapé. */
+async function savePrice(el){
+  const id = el.dataset.price;
+  const d  = allDishesAdm.find(x => x.id === id);
+  if (!d) return;
+  const v = parseFloat(String(el.value).replace(',', '.'));
+  if (!isFinite(v) || v <= 0){ el.value = d.price; return; }
+  if (Number(v) === Number(d.price)) return;      // rien n'a changé
+
+  try {
+    const ok = await rpc('resto_menu_price',
+      { p_id: SUPA.resto, p_code: ownerCode, p_dish: id, p_price: v });
+    if (!ok){ el.value = d.price; return renderDispo('Session expirée, reprenez depuis le code.'); }
+    d.price = v;
+    el.value = v;
+    el.parentElement.classList.add('saved');
+    setTimeout(() => el.parentElement && el.parentElement.classList.remove('saved'), 1500);
+
+    /* la carte du client doit refléter le nouveau prix sans attendre */
+    try { localStorage.removeItem(MENU_CACHE); } catch {}
+    const rows = await rpc('resto_menu', { p_id: SUPA.resto });
+    if (Array.isArray(rows)){
+      applyMenu(rows, 'Supabase');
+      LS.set(MENU_CACHE, { at: Date.now(), rows });
+    }
+  } catch(e){
+    el.value = d.price;
+    renderDispo(e.message);
+  }
+}
+
+async function saveVariantPrice(el){
+  const id  = el.dataset.vprice;
+  const fmt = el.dataset.vfmt;
+  const d   = allDishesAdm.find(x => x.id === id);
+  if (!d || !Array.isArray(d.variants)) return;
+
+  const cur = d.variants.find(v => v[0] === fmt);
+  if (!cur) return;
+  const v = parseFloat(String(el.value).replace(',', '.'));
+  if (!isFinite(v) || v <= 0){ el.value = cur[1]; return; }
+  if (Number(v) === Number(cur[1])) return;
+
+  try {
+    const ok = await rpc('resto_menu_variant_price',
+      { p_id: SUPA.resto, p_code: ownerCode, p_dish: id, p_format: fmt, p_price: v });
+    if (!ok){ el.value = cur[1]; return renderDispo('Session expirée, reprenez depuis le code.'); }
+    cur[1] = v;
+    el.value = v;
+    el.parentElement.classList.add('saved');
+    setTimeout(() => el.parentElement && el.parentElement.classList.remove('saved'), 1500);
+
+    try { localStorage.removeItem(MENU_CACHE); } catch {}
+    const rows = await rpc('resto_menu', { p_id: SUPA.resto });
+    if (Array.isArray(rows)){
+      applyMenu(rows, 'Supabase');
+      LS.set(MENU_CACHE, { at: Date.now(), rows });
+    }
+  } catch(e){
+    el.value = cur[1];
+    renderDispo(e.message);
+  }
 }
 
 async function toggleDish(id){
@@ -2186,6 +2281,15 @@ async function exportJSON(){
 /* ---------- interactions de l'administration ---------- */
 /* Marque le bouton pressé pendant une seconde : sur mobile, :active dure
    le temps du contact, trop bref pour confirmer qu'on a bien touché. */
+/* focusout plutôt que change : couvre aussi le cas où l'on touche
+   directement un autre champ sans valider au clavier. */
+document.addEventListener('focusout', e => {
+  const t = e.target;
+  if (!t || !t.dataset) return;
+  if (t.dataset.price)  savePrice(t);
+  if (t.dataset.vprice) saveVariantPrice(t);
+});
+
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest('.adm-bar button, .racts button, .close, .tbl-add button');
   if (!b) return;
