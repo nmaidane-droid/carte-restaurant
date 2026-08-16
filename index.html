@@ -165,6 +165,28 @@ label .lc{text-transform:none;letter-spacing:0}
 input,textarea,select{width:100%;font:inherit;background:#fff;border:1px solid var(--sand);
   border-radius:8px;padding:11px 13px;color:var(--ink)}
 textarea{min-height:74px;resize:vertical}
+.tblfix{font-family:var(--mono);font-size:20px;color:var(--cobalt-deep);
+  background:#fff;border:1px solid var(--sand);border-radius:8px;padding:10px 13px}
+
+/* ---------- gestion des tables ---------- */
+.tbl-list{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 4px}
+.tbl-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--sand);
+  background:#fff;border-radius:8px;padding:6px 8px 6px 12px;font-size:14px}
+.tbl-chip b{font-family:var(--mono);font-weight:500}
+.tbl-chip button{width:24px;height:24px;border-radius:50%;font-size:13px;line-height:1;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
+.tbl-chip button:hover{background:var(--chaux-2)}
+.tbl-chip button.del{color:#B3261E}
+.tbl-add{display:flex;gap:8px}
+.tbl-add input{flex:1}
+.tbl-add button{flex:none;border:1.5px solid var(--cobalt);color:var(--cobalt);
+  border-radius:8px;padding:0 16px}
+.fmt{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.fmt button{border:1.5px solid var(--sand);border-radius:11px;padding:16px 12px;text-align:start}
+.fmt button:hover{border-color:var(--cobalt)}
+.fmt b{display:block;font-size:15px;margin-bottom:4px}
+.fmt span{font-size:12.5px;color:var(--ink-soft);line-height:1.4}
+
 .send{width:100%;margin-top:20px;background:#25D366;color:#04310f;font-weight:600;
   border-radius:10px;padding:15px;font-size:16.5px}
 .hint{font-size:13px;color:var(--ink-soft);margin-top:10px;text-align:center}
@@ -215,6 +237,39 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
   .panel{max-width:760px;margin:0 auto}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- cartes de table à imprimer ---------- */
+#printArea{display:none}
+.qpage{width:148mm;height:210mm;page-break-after:always;break-after:page;
+  display:flex;flex-direction:column;background:#fff;overflow:hidden}
+.qpage:last-child{page-break-after:auto;break-after:auto}
+.qpage.tent{display:block;position:relative}
+.qpage.tent .flip{transform:rotate(180deg)}
+.qpage.tent .fold{position:absolute;top:105mm;left:0;right:0;
+  border-top:1px dashed #B9B2A4;height:0}
+.qcard{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;padding:14mm 10mm;text-align:center}
+.qcard.half{height:105mm;padding:7mm 10mm;justify-content:space-between}
+.qband{align-self:stretch;height:7mm;background-repeat:repeat-x;background-size:7mm 7mm;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%230B2A5B'/%3E%3Cpath d='M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z' fill='none' stroke='%23F2F0EB' stroke-width='1.3'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23C88A2E'/%3E%3C/svg%3E")}
+.qname{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.02em;
+  color:var(--cobalt-deep);line-height:1}
+.qcard.half .qname{font-size:26px}
+.qname em{font-style:normal;color:var(--ochre)}
+.qtable{display:flex;align-items:baseline;gap:10px;justify-content:center}
+.qtable span{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+.qtable b{font-family:var(--mono);font-size:58px;line-height:1;color:var(--cobalt-deep)}
+.qcard.half .qtable b{font-size:42px}
+.qcode svg{display:block}
+.qinvite{font-size:11.5px;line-height:1.7;color:var(--ink-soft)}
+.qcard.half .qinvite{font-size:10px;line-height:1.55}
+
+@media print{
+  body.printing > *:not(#printArea){display:none!important}
+  body.printing{background:#fff;padding:0;margin:0}
+  body.printing #printArea{display:block}
+  @page{size:A5;margin:0}
+}
 </style>
 </head>
 <body>
@@ -547,6 +602,10 @@ const UI = {
 /* ============================================================
    4. LOGIQUE
    ============================================================ */
+/* Le QR code de chaque table ouvre …/?t=7 : le numéro est donc déjà connu
+   et le client n'a pas à le saisir. Sans paramètre, le champ reste affiché. */
+const TABLE = (new URLSearchParams(location.search).get('t') || '').trim().slice(0, 20);
+
 let lang = CONFIG.default;
 let activeCat = MENU[0].id;          // une seule catégorie affichée à la fois
 let cart = {};                       // { "id" ou "id|3/4" : quantité }
@@ -707,8 +766,10 @@ function renderCart(){
     <div class="tot"><b>${t('total')}</b><span>${money(total())}${hasMarket()?' +':''}</span></div>
     ${hasMarket() ? `<div class="mknote">${t('mkNote')}</div>` : ''}
     ${anyArr ? `<div class="mknote">${t('arrivalNote')}</div>` : ''}
-    <label for="tbl">${t('table')}</label>
-    <input id="tbl" inputmode="numeric" autocomplete="off">
+    ${TABLE
+      ? `<label>${t('table')}</label><div class="tblfix">${TABLE}</div>`
+      : `<label for="tbl">${t('table')}</label>
+         <input id="tbl" inputmode="numeric" autocomplete="off">`}
     <label for="who">${t('name')} <span class="lc">(${t('opt')})</span></label>
     <input id="who" autocomplete="name">
     <label for="nt">${t('note')} <span class="lc">(${t('opt')})</span></label>
@@ -730,7 +791,7 @@ function buildMessage(){
     en:{h:'New order',t:'Table',n:'Name',s:'Total',r:'Note',g:'Guest language',m:'(price to confirm)',a:'(availability to confirm)'}
   }[K] || {h:'Nouvelle commande',t:'Table',n:'Nom',s:'Total',r:'Remarque',g:'Langue du client',m:'(prix à confirmer)',a:'(dispo à confirmer)'};
 
-  const tbl = ($('#tbl')?.value || '').trim();
+  const tbl = TABLE || ($('#tbl')?.value || '').trim();
   const who = ($('#who')?.value || '').trim();
   const nt  = ($('#nt')?.value  || '').trim();
 
@@ -814,7 +875,7 @@ document.addEventListener('keydown', e => {
 --------------------------------------------------------------------------- */
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: 'casa-garcia'
 };
 
@@ -1042,6 +1103,23 @@ function gearPanel(msg){
       <button id="gcode">Changer mon code</button>
     </div>
     <div class="adm-log" id="glog"></div>
+
+    <label>Tables du restaurant</label>
+    <div class="tbl-list">
+      ${tablesList().length
+        ? tablesList().map(n => `<span class="tbl-chip"><b>${esc(n)}</b>
+            <button data-qr="${esc(n)}" title="Imprimer cette table">⎙</button>
+            <button class="del" data-tdel="${esc(n)}" title="Retirer">✕</button></span>`).join('')
+        : '<span class="adm-log">Aucune table enregistrée.</span>'}
+    </div>
+    <div class="tbl-add">
+      <input id="tnew" placeholder="Numéro ou nom : 7, Terrasse 2…" autocomplete="off" maxlength="20">
+      <button id="tadd">Ajouter</button>
+    </div>
+    <div class="adm-bar">
+      <button class="solid" id="qrall">Imprimer toutes les tables</button>
+    </div>
+    <div class="adm-log" id="tlog"></div>
     <button class="close" data-close>Fermer</button>`;
 }
 
@@ -1059,6 +1137,89 @@ async function gearSave(){
     $('#glog').textContent = 'Enregistré. Les clients reçoivent le nouveau numéro immédiatement.';
     renderCart();
   } catch(e){ $('#glog').textContent = e.message; }
+}
+
+const esc = t => String(t).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tablesList = () => (REMOTE && Array.isArray(REMOTE.tables)) ? REMOTE.tables : [];
+
+async function saveTables(arr){
+  $('#tlog').textContent = 'Enregistrement…';
+  try {
+    const ok = await rpc('resto_set_tables',
+      { p_id: SUPA.resto, p_code: ownerCode, p_tables: arr });
+    if (!ok){ $('#tlog').textContent = 'Session expirée, reprenez depuis le code.'; return; }
+    REMOTE = await rpc('resto_get', { p_id: SUPA.resto });
+    gearPanel();
+  } catch(e){ $('#tlog').textContent = e.message; }
+}
+function addTable(){
+  const v = ($('#tnew').value || '').trim();
+  if (!v){ return; }
+  const list = tablesList();
+  if (list.includes(v)){ $('#tlog').textContent = 'Cette table existe déjà.'; return; }
+  saveTables(list.concat([v]));
+}
+function delTable(n){
+  if (!confirm(`Retirer la table « ${n} » ? Son QR code cessera de fonctionner.`)) return;
+  saveTables(tablesList().filter(x => x !== n));
+}
+
+/* ---------------------------------------------------------------------------
+   Impression des QR codes — deux formats, tous deux en A5
+--------------------------------------------------------------------------- */
+const tableUrl = n => location.origin + location.pathname + '?t=' + encodeURIComponent(n);
+
+function askFormat(list){
+  $('#admTitle').textContent = list.length > 1
+    ? `Imprimer ${list.length} tables` : `Imprimer la table ${list[0]}`;
+  $('#admBody').innerHTML = `
+    <div class="adm-log">Choisissez le format. Une table par page A5.</div>
+    <div class="fmt">
+      <button data-fmt="tent"><b>Chevalet plié</b>
+        <span>A5 plié en deux. Se pose debout, lisible des deux côtés de la table.
+        Imprimer sur papier épais.</span></button>
+      <button data-fmt="flat"><b>Carte posée</b>
+        <span>A5 pleine page. À poser à plat ou à glisser dans un porte-menu.</span></button>
+    </div>
+    <div class="adm-bar"><button id="fback">Retour aux paramètres</button></div>`;
+  printQueue = list;
+}
+let printQueue = [];
+
+function cardHTML(n, half){
+  const qr = QR.svg(tableUrl(n), half ? 150 : 220);
+  return `<div class="qcard ${half ? 'half' : ''}">
+    <div class="qband"></div>
+    <div class="qname">Casa <em>García</em></div>
+    <div class="qtable"><span>Table</span><b>${esc(n)}</b></div>
+    <div class="qcode">${qr}</div>
+    <div class="qinvite">
+      Scannez pour voir la carte<br>
+      Scan for the menu · Escanee para ver la carta<br>
+      امسح الرمز لعرض قائمة الطعام
+    </div>
+    <div class="qband"></div>
+  </div>`;
+}
+
+function doPrint(fmt){
+  const pages = printQueue.map(n => fmt === 'tent'
+    ? `<div class="qpage tent"><div class="flip">${cardHTML(n, true)}</div>
+         <div class="fold"></div>${cardHTML(n, true)}</div>`
+    : `<div class="qpage">${cardHTML(n, false)}</div>`).join('');
+  let area = document.getElementById('printArea');
+  if (!area){
+    area = document.createElement('div');
+    area.id = 'printArea';
+    document.body.appendChild(area);
+  }
+  area.innerHTML = pages;
+  document.body.classList.add('printing');
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove('printing');
+  }, 120);
 }
 
 /* Changement de code, commun au patron et à l'administrateur. */
@@ -1269,6 +1430,16 @@ document.addEventListener('click', async e => {
   const kk = e.target.closest('[data-k]');
   if (kk) return padKey(kk.dataset.k);
   if (e.target.id === 'gsave') return gearSave();
+  if (e.target.id === 'tadd')  return addTable();
+  if (e.target.id === 'qrall'){
+    const l = tablesList();
+    if (!l.length){ $('#tlog').textContent = 'Ajoutez au moins une table.'; return; }
+    return askFormat(l);
+  }
+  const qr1 = e.target.closest('[data-qr]');   if (qr1) return askFormat([qr1.dataset.qr]);
+  const td  = e.target.closest('[data-tdel]'); if (td)  return delTable(td.dataset.tdel);
+  const fb  = e.target.closest('[data-fmt]');  if (fb)  return doPrint(fb.dataset.fmt);
+  if (e.target.id === 'fback'){ printQueue = []; return gearPanel(); }
   if (e.target.id === 'gcode') return changeCode('owner', gearPanel);
   if (e.target.id === 'acode') return changeCode('admin', openAdmin);
   const pk = e.target.closest('[data-pick]');   if (pk) return openPicker(pk.dataset.pick);
@@ -1305,6 +1476,257 @@ document.addEventListener('click', async e => {
     live = {}; LS.set('cg_photos', live); renderMenu(); openAdmin();
   }
 });
+
+/* ============================================================================
+   6. QR CODES — générateur écrit ici, sans bibliothèque externe
+   ----------------------------------------------------------------------------
+   Correction d'erreur niveau M, versions 1 à 10, mode octet.
+   Largement suffisant pour une adresse de quatre-vingts caractères.
+   Rendu en SVG : net à l'impression quelle que soit la taille.
+   ========================================================================= */
+const QR = (() => {
+  /* [codewords de correction par bloc, blocs g1, données g1, blocs g2, données g2] */
+  const EC = {
+    1:[10,1,16,0,0],  2:[16,1,28,0,0],  3:[26,1,44,0,0],  4:[18,2,32,0,0],
+    5:[24,2,43,0,0],  6:[16,4,27,0,0],  7:[18,4,31,0,0],  8:[22,2,38,2,39],
+    9:[22,3,36,2,37], 10:[26,4,43,1,44]
+  };
+  const CAP   = {1:14,2:26,3:42,4:62,5:84,6:106,7:122,8:152,9:180,10:213};
+  const ALIGN = {1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],
+                 7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+  const FMT = [0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0];
+  const VER = {7:0x07C94,8:0x085BC,9:0x09A99,10:0x0A4D3};
+
+  /* corps de Galois GF(256), pour le calcul de Reed-Solomon */
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  (() => { let x = 1;
+    for (let i = 0; i < 255; i++){ EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  })();
+  const mul = (a, b) => (a && b) ? EXP[LOG[a] + LOG[b]] : 0;
+
+  function genPoly(n){
+    let p = [1];
+    for (let i = 0; i < n; i++){
+      const q = p.concat([0]);
+      for (let j = 0; j < p.length; j++) q[j + 1] ^= mul(p[j], EXP[i]);
+      p = q;
+    }
+    return p;
+  }
+  function ecc(data, n){
+    const gen = genPoly(n), res = new Array(n).fill(0);
+    for (const d of data){
+      const f = d ^ res[0];
+      res.shift(); res.push(0);
+      for (let i = 0; i < n; i++) res[i] ^= mul(gen[i + 1], f);
+    }
+    return res;
+  }
+
+  const MASKS = [
+    (r,c) => (r + c) % 2 === 0,
+    (r,c) => r % 2 === 0,
+    (r,c) => c % 3 === 0,
+    (r,c) => (r + c) % 3 === 0,
+    (r,c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+    (r,c) => (r * c) % 2 + (r * c) % 3 === 0,
+    (r,c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0,
+    (r,c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0
+  ];
+
+  function penalty(m, size){
+    let p = 0;
+    /* règle 1 : suites de cinq modules identiques ou plus */
+    for (let k = 0; k < 2; k++){
+      for (let i = 0; i < size; i++){
+        let run = 1, prev = -1;
+        for (let j = 0; j < size; j++){
+          const v = k ? m[j][i] : m[i][j];
+          if (v === prev) run++;
+          else { if (run >= 5) p += run - 2; run = 1; prev = v; }
+        }
+        if (run >= 5) p += run - 2;
+      }
+    }
+    /* règle 2 : carrés deux par deux de même couleur */
+    for (let r = 0; r < size - 1; r++)
+      for (let c = 0; c < size - 1; c++){
+        const v = m[r][c];
+        if (v === m[r][c+1] && v === m[r+1][c] && v === m[r+1][c+1]) p += 3;
+      }
+    /* règle 3 : motif ressemblant à un repère de position */
+    const P1 = [1,0,1,1,1,0,1,0,0,0,0], P2 = [0,0,0,0,1,0,1,1,1,0,1];
+    for (let r = 0; r < size; r++)
+      for (let c = 0; c < size; c++){
+        for (const pat of [P1, P2]){
+          if (c + 11 <= size){
+            let ok = true;
+            for (let i = 0; i < 11; i++) if (m[r][c+i] !== pat[i]){ ok = false; break; }
+            if (ok) p += 40;
+          }
+          if (r + 11 <= size){
+            let ok = true;
+            for (let i = 0; i < 11; i++) if (m[r+i][c] !== pat[i]){ ok = false; break; }
+            if (ok) p += 40;
+          }
+        }
+      }
+    /* règle 4 : déséquilibre entre modules clairs et sombres */
+    let dark = 0;
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) dark += m[r][c];
+    const pct = dark * 100 / (size * size);
+    p += Math.floor(Math.abs(pct - 50) / 5) * 10;
+    return p;
+  }
+
+  function build(text){
+    const bytes = new TextEncoder().encode(text);
+    let ver = 1;
+    while (ver <= 10 && bytes.length > CAP[ver]) ver++;
+    if (ver > 10) throw new Error('adresse trop longue pour un QR code');
+
+    const [ecn, g1b, g1d, g2b, g2d] = EC[ver];
+    const totalData = g1b * g1d + g2b * g2d;
+
+    /* flux binaire : mode octet, longueur, données, terminateur, remplissage */
+    const bits = [];
+    const push = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >> i) & 1); };
+    push(4, 4);
+    push(bytes.length, ver < 10 ? 8 : 16);
+    for (const b of bytes) push(b, 8);
+    const capBits = totalData * 8;
+    for (let i = 0; i < 4 && bits.length < capBits; i++) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    const PADS = [0xEC, 0x11];
+    let k = 0;
+    while (bits.length < capBits) push(PADS[k++ % 2], 8);
+
+    const cw = [];
+    for (let i = 0; i < bits.length; i += 8){
+      let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bits[i + j];
+      cw.push(v);
+    }
+
+    /* découpage en blocs, correction, puis entrelacement */
+    const blocks = [], ecs = [];
+    let pos = 0;
+    for (let i = 0; i < g1b; i++){ blocks.push(cw.slice(pos, pos + g1d)); pos += g1d; }
+    for (let i = 0; i < g2b; i++){ blocks.push(cw.slice(pos, pos + g2d)); pos += g2d; }
+    for (const b of blocks) ecs.push(ecc(b, ecn));
+
+    const out = [], maxD = Math.max(g1d, g2d);
+    for (let i = 0; i < maxD; i++) for (const b of blocks) if (i < b.length) out.push(b[i]);
+    for (let i = 0; i < ecn; i++) for (const e of ecs) out.push(e[i]);
+
+    /* matrice */
+    const size = 17 + 4 * ver;
+    const m  = Array.from({length: size}, () => new Array(size).fill(0));
+    const fn = Array.from({length: size}, () => new Array(size).fill(false));
+    const set = (r, c, v) => { m[r][c] = v; fn[r][c] = true; };
+
+    const finder = (r, c) => {
+      for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++){
+        const rr = r + i, cc = c + j;
+        if (rr < 0 || cc < 0 || rr >= size || cc >= size) continue;
+        const on = (i >= 0 && i <= 6 && (j === 0 || j === 6))
+                || (j >= 0 && j <= 6 && (i === 0 || i === 6))
+                || (i >= 2 && i <= 4 && j >= 2 && j <= 4);
+        set(rr, cc, on ? 1 : 0);
+      }
+    };
+    finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+
+    for (let i = 8; i < size - 8; i++){
+      set(6, i, i % 2 === 0 ? 1 : 0);
+      set(i, 6, i % 2 === 0 ? 1 : 0);
+    }
+    for (const r of ALIGN[ver]) for (const c of ALIGN[ver]){
+      if ((r <= 8 && c <= 8) || (r <= 8 && c >= size - 9) || (r >= size - 9 && c <= 8)) continue;
+      for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++)
+        set(r + i, c + j, Math.max(Math.abs(i), Math.abs(j)) !== 1 ? 1 : 0);
+    }
+    set(size - 8, 8, 1);                       // module sombre obligatoire
+
+    /* zones réservées au format et à la version */
+    for (let i = 0; i <= 8; i++){ if (!fn[8][i]) set(8, i, 0); if (!fn[i][8]) set(i, 8, 0); }
+    for (let i = 0; i < 8; i++){
+      if (!fn[8][size-1-i]) set(8, size-1-i, 0);
+      if (!fn[size-1-i][8]) set(size-1-i, 8, 0);
+    }
+    if (ver >= 7){
+      for (let i = 0; i < 18; i++){
+        const a = size - 11 + i % 3, b = Math.floor(i / 3);
+        set(b, a, 0); set(a, b, 0);
+      }
+    }
+
+    /* placement des données en zigzag */
+    let dir = -1, row = size - 1, idx = 0;
+    for (let col = size - 1; col > 0; col -= 2){
+      if (col === 6) col--;
+      for (;;){
+        for (let c = 0; c < 2; c++){
+          const cc = col - c;
+          if (!fn[row][cc]){
+            let bit = 0;
+            if (idx < out.length * 8){ bit = (out[idx >> 3] >> (7 - (idx & 7))) & 1; idx++; }
+            m[row][cc] = bit;
+          }
+        }
+        row += dir;
+        if (row < 0 || row >= size){ row -= dir; dir = -dir; break; }
+      }
+    }
+
+    /* choix du masque : celui qui obtient la plus faible pénalité */
+    let best = null, bestScore = Infinity;
+    for (let k = 0; k < 8; k++){
+      const t = m.map(r => r.slice());
+      for (let r = 0; r < size; r++) for (let c = 0; c < size; c++)
+        if (!fn[r][c] && MASKS[k](r, c)) t[r][c] ^= 1;
+      putFormat(t, size, k);
+      if (ver >= 7) putVersion(t, size, ver);
+      const s = penalty(t, size);
+      if (s < bestScore){ bestScore = s; best = t; }
+    }
+    return { m: best, size };
+  }
+
+  function putFormat(t, size, mask){
+    const bits = FMT[mask], bit = i => (bits >> i) & 1;
+    for (let i = 0; i <= 5; i++) t[i][8] = bit(i);
+    t[7][8] = bit(6); t[8][8] = bit(7); t[8][7] = bit(8);
+    for (let i = 9; i < 15; i++) t[8][14 - i] = bit(i);
+    for (let i = 0; i < 8; i++) t[8][size - 1 - i] = bit(i);
+    for (let i = 8; i < 15; i++) t[size - 15 + i][8] = bit(i);
+    t[size - 8][8] = 1;
+  }
+  function putVersion(t, size, ver){
+    const bits = VER[ver];
+    for (let i = 0; i < 18; i++){
+      const b = (bits >> i) & 1;
+      const a = size - 11 + i % 3, r = Math.floor(i / 3);
+      t[r][a] = b; t[a][r] = b;
+    }
+  }
+
+  /* SVG : un seul chemin, marge de quatre modules comme l'exige la norme */
+  function svg(text, px){
+    const { m, size } = build(text);
+    const q = 4, total = size + q * 2;
+    let d = '';
+    for (let r = 0; r < size; r++)
+      for (let c = 0; c < size; c++)
+        if (m[r][c]) d += `M${c + q} ${r + q}h1v1h-1z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}"
+      width="${px}" height="${px}" shape-rendering="crispEdges">
+      <rect width="${total}" height="${total}" fill="#fff"/>
+      <path d="${d}" fill="#0B2A5B"/></svg>`;
+  }
+
+  return { svg, build };
+})();
 
 setLang(CONFIG.default);
 $('#langSheet').classList.add('on');
