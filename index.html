@@ -204,8 +204,9 @@ textarea{min-height:74px;resize:vertical}
 .tbl-chip button.del:hover{background:#8E1E19}
 .tbl-add{display:flex;gap:8px}
 .tbl-add input{flex:1}
-.tbl-add button{flex:none;min-height:44px;border:1.5px solid var(--cobalt);
-  background:var(--cobalt);color:#fff;border-radius:10px;padding:0 18px;font-weight:600}
+.tbl-add button{flex:none;min-height:44px;border:1.5px solid var(--sand);
+  background:#fff;color:var(--cobalt-deep);border-radius:10px;padding:0 18px;font-weight:600}
+.tbl-add button.tap{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
 /* ---------- console : liste des restaurants ---------- */
 .rlist{margin:12px 0 4px}
 /* Un seul cadre par restaurant : identité, adresse et actions ensemble. */
@@ -232,6 +233,8 @@ textarea{min-height:74px;resize:vertical}
   border-radius:9px;background:#fff;font-size:12.5px;color:var(--cobalt-deep);
   display:flex;align-items:center;justify-content:center;gap:5px}
 .racts button:hover{border-color:var(--cobalt)}
+.racts button.tap{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.racts button.tap i{filter:brightness(0) invert(1)}
 .racts button i{font-style:normal;font-size:13px;opacity:.8}
 .qrbox{text-align:center;padding:18px 0 6px}
 .qrbox svg{display:block;margin:0 auto;border:1px solid var(--sand);border-radius:12px}
@@ -283,6 +286,7 @@ textarea{min-height:74px;resize:vertical}
 .close{width:100%;margin-top:14px;padding:13px;border:1px solid var(--sand);border-radius:11px;
   background:#fff;color:var(--ink-soft);font-size:14.5px}
 .close:hover{border-color:var(--ink-soft)}
+.close.tap{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
 .pad-bottom{height:10px}
 .empty{text-align:center;color:var(--ink-soft);padding:34px 0}
 
@@ -305,9 +309,15 @@ textarea{min-height:74px;resize:vertical}
   background:#fff;color:var(--cobalt-deep);font-size:14px;font-weight:600;line-height:1.25;
   transition:border-color .15s,background .15s,color .15s}
 .adm-bar button:hover{border-color:var(--cobalt)}
+/* Un seul style au repos : blanc et contour. Le fond bleu ne paraît qu'à
+   l'appui, et tient une seconde pour être vu même sur un geste bref. */
+.adm-bar button.tap{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.adm-bar button.tap i{filter:brightness(0) invert(1)}
 .adm-bar button i{font-style:normal;font-size:16px;line-height:1;opacity:.85}
+/* réservé à « Nouveau restaurant » et « Imprimer toutes les tables » */
 .adm-bar button.solid{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
-.adm-bar button.solid:hover{background:var(--cobalt-deep);border-color:var(--cobalt-deep)}
+.adm-bar button.solid:hover,
+.adm-bar button.solid.tap{background:var(--cobalt-deep);border-color:var(--cobalt-deep)}
 .adm-bar button.warn{border-color:#EBD3D0;color:#B3261E}
 .adm-bar button.warn:hover{border-color:#B3261E}
 .adm-bar button.wide{grid-column:1 / -1}
@@ -1134,7 +1144,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1428,7 +1438,7 @@ function gearPanel(msg){
     </select>
 
     <div class="adm-bar">
-      <button class="solid" id="gsave"><i>✓</i>Enregistrer</button>
+      <button id="gsave"><i>✓</i>Enregistrer</button>
       <button id="gcode"><i>🔑</i>Changer mon code</button>
     </div>
     <div class="adm-log" id="glog"></div>
@@ -1806,7 +1816,7 @@ function vitrine(id){
       <div class="qu">${esc(url)}</div>
     </div>
     <div class="adm-bar">
-      <button class="solid" id="vprint"><i>🖨</i>Imprimer</button>
+      <button id="vprint"><i>🖨</i>Imprimer</button>
       <button id="vback"><i>←</i>Retour</button>
     </div>`;
   vitrineFor = id;
@@ -1906,7 +1916,7 @@ function newResto(msg){
     <input id="ncur" value="MAD" maxlength="6" autocomplete="off">
 
     <div class="adm-bar">
-      <button class="solid" id="rcreate"><i>✓</i>Créer</button>
+      <button id="rcreate"><i>✓</i>Créer</button>
       <button id="rback"><i>←</i>Retour</button>
     </div>
     <div class="adm-log" id="rlog"></div>`;
@@ -1976,9 +1986,9 @@ function openAdmin(msg){
       ? 'Sert uniquement à chercher de nouvelles photos. Les photos déjà publiées s\'affichent sans elle.'
       : 'Sans clé, la recherche de photos est indisponible. Les photos déjà publiées restent visibles par les clients. Clé gratuite sur pexels.com/api'}</div>
     <div class="adm-bar">
-      <button class="solid" id="fill"><i>✨</i>Remplir les manquantes</button>
+      <button id="fill"><i>✨</i>Remplir les manquantes</button>
       <button class="${admFilter==='dupes'?'solid':''}" id="dupes"><i>⧉</i>Doublons${dup.size?' ('+dup.size+')':''}</button>
-      <button class="solid" id="expo"><i>☁</i>Publier les photos</button>
+      <button id="expo"><i>☁</i>Publier les photos</button>
       <button id="acode"><i>🔑</i>Changer mon code</button>
       <button class="warn" id="wipe"><i>🗑</i>Tout retirer</button>
     </div>
@@ -2055,7 +2065,7 @@ async function openPicker(id){
   $('#admBody').innerHTML = `
     <label for="q">Mots-clés</label>
     <input id="q" value="${PEXQ[id] || ''}" autocomplete="off">
-    <div class="adm-bar"><button class="solid" id="go"><i>🔍</i>Chercher</button>
+    <div class="adm-bar"><button id="go"><i>🔍</i>Chercher</button>
       <button id="back"><i>←</i>Retour</button></div>
     <div class="adm-log" id="log"></div>
     <div class="res" id="res"></div>`;
@@ -2117,6 +2127,15 @@ async function exportJSON(){
 }
 
 /* ---------- interactions de l'administration ---------- */
+/* Marque le bouton pressé pendant une seconde : sur mobile, :active dure
+   le temps du contact, trop bref pour confirmer qu'on a bien touché. */
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.adm-bar button, .racts button, .close, .tbl-add button');
+  if (!b) return;
+  b.classList.add('tap');
+  setTimeout(() => b.classList.remove('tap'), 1000);
+}, { passive: true });
+
 document.addEventListener('click', async e => {
   const kk = e.target.closest('[data-k]');
   if (kk) return padKey(kk.dataset.k);
