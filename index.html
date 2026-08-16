@@ -906,10 +906,17 @@ document.addEventListener('click', e => {
 let sheetOpen = null;
 let printQueue = [];   // tables en attente d'impression
 
+/* Chrome marque « à sauter » toute entrée d'historique ajoutée sans geste de
+   l'utilisateur. Une entrée empilée au chargement serait donc ignorée, et le
+   retour quitterait le site. On n'empile qu'à l'ouverture déclenchée par un
+   appui, et on ne dépile que si l'on avait bien empilé. */
+let sheetPushed = false;
+
 function openSheet(id){
   if (sheetOpen === id) return;
+  if (sheetOpen) $('#' + sheetOpen).classList.remove('on');
   $('#' + id).classList.add('on');
-  if (!sheetOpen) history.pushState({ sheet: true }, '');
+  if (!sheetPushed){ history.pushState({ sheet: true }, ''); sheetPushed = true; }
   sheetOpen = id;
 }
 function closeSheet(fromPop){
@@ -917,8 +924,10 @@ function closeSheet(fromPop){
   $('#' + sheetOpen).classList.remove('on');
   sheetOpen = null;
   printQueue = [];
-  if (!fromPop) history.back();      // consomme l'entrée empilée à l'ouverture
+  if (!fromPop && sheetPushed) history.back();   // consomme l'entrée empilée
+  if (fromPop) sheetPushed = false;
 }
+window.addEventListener('popstate', () => { sheetPushed = false; });
 window.addEventListener('popstate', () => closeSheet(true));
 
 $('#globe').onclick = () => openSheet('langSheet');
@@ -944,7 +953,7 @@ document.addEventListener('keydown', e => {
 --------------------------------------------------------------------------- */
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: 'casa-garcia'
 };
 
@@ -1878,11 +1887,10 @@ rpc('resto_menu', { p_id: SUPA.resto })
   })
   .catch(() => { /* cache ou copie de secours : la carte reste affichée */ });
 
-/* premier écran : la grille des langues, sans empiler d'entrée d'historique —
-   sinon la toute première flèche retour ne ferait rien de visible */
+/* Premier écran : la grille des langues. Aucune entrée d'historique ici —
+   Chrome la sauterait, et le premier choix de langue ferait quitter le site. */
 $('#langSheet').classList.add('on');
 sheetOpen = 'langSheet';
-history.pushState({ sheet: true }, '');
 </script>
 </body>
 </html>
