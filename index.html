@@ -291,11 +291,6 @@ textarea{min-height:74px;resize:vertical}
   margin:16px 0 2px;padding-top:8px;border-top:1px solid var(--chaux-2)}
 .dgrp:first-child{border-top:0;padding-top:0;margin-top:8px}
 
-.fmt{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
-.fmt button{border:1.5px solid var(--sand);border-radius:11px;padding:16px 12px;text-align:start}
-.fmt button:hover{border-color:var(--cobalt)}
-.fmt b{display:block;font-size:15px;margin-bottom:4px}
-.fmt span{font-size:12.5px;color:var(--ink-soft);line-height:1.4}
 
 .send{width:100%;margin-top:20px;background:#25D366;color:#04310f;font-weight:600;
   border-radius:10px;padding:15px;font-size:16.5px}
@@ -370,33 +365,43 @@ footer{padding:30px var(--pad) 40px;color:var(--ink-soft);font-size:13px;
 .qpage{width:148mm;height:210mm;page-break-after:always;break-after:page;
   display:flex;flex-direction:column;background:#fff;overflow:hidden}
 .qpage:last-child{page-break-after:auto;break-after:auto}
-.qpage.tent{display:block;position:relative}
+/* Chevalet : une A4 entière, deux moitiés de 210 × 148 mm.
+   Celle du haut est retournée pour se lire une fois la feuille pliée. */
+.qpage.tent{width:210mm;height:297mm;display:block;position:relative}
 .qpage.tent .flip{transform:rotate(180deg)}
-.qpage.tent .fold{position:absolute;top:105mm;left:0;right:0;
+.qpage.tent .fold{position:absolute;top:148.5mm;left:0;right:0;
   border-top:1px dashed #B9B2A4;height:0}
 .qcard{flex:1;display:flex;flex-direction:column;align-items:center;
   justify-content:space-between;padding:14mm 10mm;text-align:center}
-.qcard.half{height:105mm;padding:7mm 10mm;justify-content:space-between}
+.qcard.half{height:148.5mm;padding:12mm 14mm;justify-content:space-between}
 .qband{align-self:stretch;height:7mm;background-repeat:repeat-x;background-size:7mm 7mm;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%230B2A5B'/%3E%3Cpath d='M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z' fill='none' stroke='%23FFFFFF' stroke-width='1.3'/%3E%3Ccircle cx='12' cy='12' r='2.6' fill='%23B4512C'/%3E%3C/svg%3E")}
 .qname{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.02em;
   color:var(--cobalt-deep);line-height:1}
-.qcard.half .qname{font-size:26px}
+.qcard.half .qname{font-size:34px}
 .qname em{font-style:normal;color:var(--ochre)}
 .qtable{display:flex;align-items:baseline;gap:10px;justify-content:center}
 .qtable span{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
 .qtable b{font-family:var(--mono);font-size:58px;line-height:1;color:var(--cobalt-deep)}
-.qcard.half .qtable b{font-size:42px}
+.qcard.half .qtable b{font-size:64px}
 .qcode svg{display:block}
 .qinvite{font-size:11.5px;line-height:1.7;color:var(--ink-soft)}
-.qcard.half .qinvite{font-size:10px;line-height:1.55}
+.qcard.half .qinvite{font-size:12.5px;line-height:1.8}
+
+/* Affiche de devanture : une A4 pleine page, QR nettement plus grand. */
+.qpage.a4{width:210mm;height:297mm}
+.qpage.a4 .qname{font-size:52px}
+.qpage.a4 .qinvite{font-size:15px;line-height:1.9}
+.qpage.a4 .qband{height:11mm;background-size:11mm 11mm}
 
 @media print{
+  body.printing.printing-a4 .qpage{width:210mm;height:297mm}
   body.printing > *:not(#printArea){display:none!important}
   body.printing{background:#fff;padding:0;margin:0}
   body.printing #printArea{display:block}
   @page{size:A5;margin:0}
 }
+
 </style>
 </head>
 <body>
@@ -1208,7 +1213,7 @@ function restoFromUrl(){
 
 const SUPA = {
   url:  'https://sfpjcqhaunkicllzvoba.supabase.co',
-  anon: 'sb_publishable_KDVwa80iE7olqEnpregnaQ_hPUw7K_5',                     // ⚠️ à remplir : Settings → API → anon public
+  anon: 'VOTRE_CLE_ANON',                     // ⚠️ à remplir : Settings → API → anon public
   resto: restoFromUrl()
 };
 
@@ -1523,6 +1528,7 @@ function gearPanel(msg){
     </div>
     <div class="adm-bar">
       <button class="solid wide" id="qrall"><i>🖨</i>Imprimer toutes les tables</button>
+      <button class="wide" id="qrfacade"><i>▦</i>QR code façade</button>
     </div>
 
     <label>Carte du restaurant</label>
@@ -1583,24 +1589,15 @@ function delTable(n){
 --------------------------------------------------------------------------- */
 const tableUrl = n => location.origin + location.pathname + '?t=' + encodeURIComponent(n);
 
+/* Un seul format : le chevalet A4. Le A5 est difficile à trouver au Maroc,
+   et une A4 pliée en deux donne un chevalet de 210 × 148 mm, plus stable. */
 function askFormat(list){
-  $('#admTitle').textContent = list.length > 1
-    ? `Imprimer ${list.length} tables` : `Imprimer la table ${list[0]}`;
-  $('#admBody').innerHTML = `
-    <div class="adm-log">Choisissez le format. Une table par page A5.</div>
-    <div class="fmt">
-      <button data-fmt="tent"><b>Chevalet plié</b>
-        <span>A5 plié en deux. Se pose debout, lisible des deux côtés de la table.
-        Imprimer sur papier épais.</span></button>
-      <button data-fmt="flat"><b>Carte posée</b>
-        <span>A5 pleine page. À poser à plat ou à glisser dans un porte-menu.</span></button>
-    </div>
-    <div class="adm-bar"><button class="wide" id="fback"><i>←</i>Retour aux paramètres</button></div>`;
   printQueue = list;
+  doPrint();
 }
 
 function cardHTML(n, half){
-  const qr = QR.svg(tableUrl(n), half ? 150 : 220);
+  const qr = QR.svg(tableUrl(n), half ? 300 : 220);
   return `<div class="qcard ${half ? 'half' : ''}">
     <div class="qband"></div>
     <div class="qname">Casa <em>García</em></div>
@@ -1615,11 +1612,10 @@ function cardHTML(n, half){
   </div>`;
 }
 
-function doPrint(fmt){
-  const pages = printQueue.map(n => fmt === 'tent'
-    ? `<div class="qpage tent"><div class="flip">${cardHTML(n, true)}</div>
-         <div class="fold"></div>${cardHTML(n, true)}</div>`
-    : `<div class="qpage">${cardHTML(n, false)}</div>`).join('');
+function doPrint(){
+  const pages = printQueue.map(n =>
+    `<div class="qpage tent"><div class="flip">${cardHTML(n, true)}</div>
+       <div class="fold"></div>${cardHTML(n, true)}</div>`).join('');
   let area = document.getElementById('printArea');
   if (!area){
     area = document.createElement('div');
@@ -1627,10 +1623,16 @@ function doPrint(fmt){
     document.body.appendChild(area);
   }
   area.innerHTML = pages;
+  let ps = document.getElementById('pageSize');
+  if (!ps){ ps = document.createElement('style'); ps.id = 'pageSize';
+            document.head.appendChild(ps); }
+  ps.textContent = '@media print{ @page{ size:A4; margin:0 } }';
+
   document.body.classList.add('printing');
   setTimeout(() => {
     window.print();
     document.body.classList.remove('printing');
+    ps.textContent = '';
   }, 120);
 }
 
@@ -1953,6 +1955,29 @@ async function shareResto(id){
   openConsole('Lien copié : le partage natif n\'est pas disponible sur ce navigateur.');
 }
 
+/* Écran façade ouvert depuis l'engrenage du patron : il imprime lui-même
+   son QR de devanture, sans passer par la console. */
+function facade(){
+  const id = SUPA.resto;
+  const url = vitrineUrl(id);
+  $('#admTitle').textContent = 'QR code façade';
+  $('#admBody').innerHTML = `
+    <div class="adm-log">À coller sur la vitrine ou la devanture. Il ouvre la carte
+      en consultation : le passant regarde, il ne commande pas. Les QR codes des
+      tables sont dans la section Tables.</div>
+    <div class="qrbox">
+      ${QR.svg(url, 240)}
+      <div class="qn">${esc(setting('name') || id)}</div>
+      <div class="qu">${esc(url)}</div>
+    </div>
+    <div class="adm-bar">
+      <button id="fprintA4"><i>🖨</i>Affiche A4</button>
+      <button id="fprintA5"><i>🖨</i>Carte A5</button>
+      <button class="wide" id="fback2"><i>←</i>Retour aux paramètres</button>
+    </div>`;
+  vitrineFor = id;
+}
+
 /* QR code de l'établissement, sans numéro de table : pour la vitrine,
    la devanture ou une carte de visite. À ne pas confondre avec ceux des tables. */
 function vitrine(id){
@@ -1975,17 +2000,22 @@ function vitrine(id){
 }
 let vitrineFor = null;
 
-function printVitrine(){
+/* Deux formats : l'affiche A4 pour une devanture, lisible depuis le trottoir,
+   et la carte A5 pour un comptoir ou un porte-menu. */
+function printVitrine(fmt){
   const id = vitrineFor;
-  const r = (restoList || []).find(x => x.id === id);
+  const r  = (restoList || []).find(x => x.id === id);
+  const nom = r ? r.name : (setting('name') || id);
+  const a4 = fmt === 'a4';
   printQueue = [];
+
   let area = document.getElementById('printArea');
   if (!area){ area = document.createElement('div'); area.id = 'printArea';
               document.body.appendChild(area); }
-  area.innerHTML = `<div class="qpage"><div class="qcard">
+  area.innerHTML = `<div class="qpage ${a4 ? 'a4' : ''}"><div class="qcard">
       <div class="qband"></div>
-      <div class="qname">${esc(r ? r.name : id)}</div>
-      <div class="qcode">${QR.svg(vitrineUrl(id), 260)}</div>
+      <div class="qname">${esc(nom)}</div>
+      <div class="qcode">${QR.svg(vitrineUrl(id), a4 ? 380 : 260)}</div>
       <div class="qinvite">
         Scannez pour voir la carte<br>
         Scan for the menu · Escanee para ver la carta<br>
@@ -1993,8 +2023,20 @@ function printVitrine(){
       </div>
       <div class="qband"></div>
     </div></div>`;
+  /* La taille du papier vient de la règle @page, qui ne peut pas dépendre
+     d'une classe : on l'injecte le temps de l'impression. */
+  let ps = document.getElementById('pageSize');
+  if (!ps){ ps = document.createElement('style'); ps.id = 'pageSize';
+            document.head.appendChild(ps); }
+  ps.textContent = `@media print{ @page{ size:${a4 ? 'A4' : 'A5'}; margin:0 } }`;
+
   document.body.classList.add('printing');
-  setTimeout(() => { window.print(); document.body.classList.remove('printing'); }, 120);
+  document.body.classList.toggle('printing-a4', a4);
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove('printing', 'printing-a4');
+    ps.textContent = '';
+  }, 120);
 }
 
 /* Ouvrir un restaurant depuis la console : on charge son identité, puis on
@@ -2313,7 +2355,11 @@ document.addEventListener('click', async e => {
   if (sh) return shareResto(sh.dataset.share);
   const vt = e.target.closest('[data-vitrine]');
   if (vt) return vitrine(vt.dataset.vitrine);
-  if (e.target.id === 'vprint') return printVitrine();
+  if (e.target.id === 'qrfacade') return facade();
+  if (e.target.id === 'fprintA4') return printVitrine('a4');
+  if (e.target.id === 'fprintA5') return printVitrine('a5');
+  if (e.target.id === 'fback2')   return gearPanel();
+  if (e.target.id === 'vprint')   return printVitrine('a5');
   if (e.target.id === 'vback')  return openConsole();
   const ra = e.target.closest('[data-active]');
   if (ra) return toggleActive(ra.dataset.active);
@@ -2331,8 +2377,6 @@ document.addEventListener('click', async e => {
   }
   const qr1 = e.target.closest('[data-qr]');   if (qr1) return askFormat([qr1.dataset.qr]);
   const td  = e.target.closest('[data-tdel]'); if (td)  return delTable(td.dataset.tdel);
-  const fb  = e.target.closest('[data-fmt]');  if (fb)  return doPrint(fb.dataset.fmt);
-  if (e.target.id === 'fback'){ printQueue = []; return gearPanel(); }
   if (e.target.id === 'gcode') return changeCode('owner', gearPanel);
   if (e.target.id === 'acode') return changeCode('admin', openAdmin);
   const pk = e.target.closest('[data-pick]');   if (pk) return openPicker(pk.dataset.pick);
